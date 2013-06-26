@@ -1,5 +1,9 @@
 ;;;; package.lisp
 
 (defpackage #:cl-glfw3
-  (:use #:cl #:cffi))
+  (:nicknames :glfw)
+  (:use #:cl))
 
+(defpackage #:%cl-glfw3
+  (:nicknames :%glfw)
+  (:use #:cl #:cffi))
