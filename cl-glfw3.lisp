@@ -5,7 +5,9 @@
 
 ;;;; Much of the convenience in this library comes from the presence of a default window value, *WINDOW*. *WINDOW* can be set by MAKE-CONTEXT-CURRENT, or by CREATE-WINDOW.
 
-;;;; Callback creation macros are also provided. These macros ask for the name of the callback to be created, a list of symbols which correspond to the arguments of the callback and the body.
+;;;; WITH- macros (WITH-INIT, WITH-WINDOW WITH-INIT-WINDOW) are provided for convenience (and inspired by cl-glfw).
+
+;;;; Callback creation macros are also provided. These macros ask for the name of the callback to be created, a list of symbols which correspond to the arguments of the callback and the body. Callback setter functions in this package require the (quoted) name of the callback.
 
 ;;;; Full documentation for GLFW3 can be found at http://www.glfw.org/docs/3.0/index.html
 
@@ -92,6 +94,7 @@
   (%glfw:set-error-callback (cffi:get-callback callback-name)))
 
 (defmacro with-init (&body body)
+  "Wrap BODY with an initialized GLFW instance, ensuring proper termination. If no error callback is set when this is called, a default error callback is set."
   `(progn
      (let ((prev-error-fun (set-error-callback 'default-error-fun)))
        (unless (eq prev-error-fun (cffi:null-pointer))
@@ -138,7 +141,9 @@
 			(opengl-forward-compat nil)
 			(opengl-debug-context nil)
 			(opengl-profile :opengl-any-profile))
-  "MONITOR: The monitor on which the window should be full-screen.
+  "This function handles all window hints.
+
+MONITOR: The monitor on which the window should be full-screen.
 SHARED: The window whose context to share resources with."
   (macrolet ((output-hints (&rest hints)
 	       `(progn 
@@ -178,6 +183,7 @@ SHARED: The window whose context to share resources with."
     (setf *window* nil)))
 
 (defmacro with-window ((&rest window-keys) &body body)
+  "Convenience macro for using windows."
   `(unwind-protect
 	(progn
 	  (create-window ,@window-keys)
@@ -185,6 +191,7 @@ SHARED: The window whose context to share resources with."
      (destroy-window)))
 
 (defmacro with-init-window ((&rest window-keys) &body body)
+  "Convenience macro for setting up GLFW and opening a window."
   `(with-init
      (with-window ,window-keys ,@body)))
 
