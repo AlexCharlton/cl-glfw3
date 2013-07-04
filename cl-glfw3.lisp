@@ -5,7 +5,7 @@
 
 ;;;; Much of the convenience in this library comes from the presence of a default window value, *WINDOW*. *WINDOW* can be set by MAKE-CONTEXT-CURRENT, or by CREATE-WINDOW.
 
-;;;; WITH- macros (WITH-INIT, WITH-WINDOW WITH-INIT-WINDOW) are provided for convenience (and inspired by cl-glfw).
+;;;; WITH- macros (WITH-INIT, WITH-WINDOW WITH-INIT-WINDOW) are provided for convenience (and inspired by cl-glfw). WITH-CONTEXT, is another convenience function (although not present in cl-glfw).
 
 ;;;; Callback creation macros are also provided. These macros ask for the name of the callback to be created, a list of symbols which correspond to the arguments of the callback and the body. Callback setter functions in this package require the (quoted) name of the callback.
 
@@ -74,6 +74,7 @@
    get-clipboard-string
    make-context-current
    get-current-context
+   with-context
    swap-buffers))
 
 ;;;; ## Window and monitor functions
@@ -407,6 +408,12 @@ SHARED: The window whose context to share resources with."
 
 (defun get-current-context ()
   (%glfw:get-current-context))
+
+(defmacro with-context (window &body body)
+  (let ((saved-window (gensym "window")))
+    `(let* ((,saved-window *window*)
+	    (*window* ,window))
+       ,@body)))
 
 (defun swap-buffers (&optional (window *window*))
   (%glfw:swap-buffers window))
