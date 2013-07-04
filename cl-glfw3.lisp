@@ -307,17 +307,17 @@ SHARED: The window whose context to share resources with."
 (import-export %glfw:poll-events %glfw:wait-events)
 
 (defun get-input-mode (mode &optional (window *window*))
-  "Mode is one of :CURSUR :STICKY-KEYS or :STICKY-MOUSE-BUTTONS."
+  "Mode is one of :CURSOR :STICKY-KEYS or :STICKY-MOUSE-BUTTONS."
   (let ((value (%glfw:get-input-mode window mode)))
     (ccase mode
-      (:cursur
+      (:cursor
        (cffi:convert-from-foreign value '%glfw::cursor-mode))
       ((:sticky-keys :sticky-mouse-buttons)
        (cffi:convert-from-foreign value :boolean)))))
 
 (defun set-input-mode (mode value &optional (window *window*))
   (let ((value (ccase mode
-		 (:cursur
+		 (:cursor
 		  (cffi:convert-to-foreign value '%glfw::cursor-mode))
 		 ((:sticky-keys :sticky-mouse-buttons)
 		  (cffi:convert-to-foreign value :boolean)))))
