@@ -1,4 +1,5 @@
 ;;;; glfw-bindings.lisp
+
 ;;;; # GLFW Bindings
 ;;;; Bindings to the GLFW 3.x library. The functions defined in this file attempt to provide the canonical library with minimal conveniences. Full documentation for the library can be found at http://www.glfw.org/docs/3.0/index.html
 (in-package #:%glfw)
@@ -49,7 +50,7 @@
    wait-events
    get-input-mode
    set-input-mode
-   key-action
+   get-key
    get-mouse-button
    get-cursor-position
    set-cursor-position
@@ -73,6 +74,11 @@
    swap-interval
    extension-supported-p
    get-proc-address))
+
+(define-foreign-library (glfw)
+     (t (:default "libglfw")))
+
+(use-foreign-library glfw)
 
 ;;;; ## GLFW Types
 (defcenum (key-action)
@@ -202,11 +208,11 @@
   (:menu 348)
   (:last 348))
 
-(defcenum (mod-key)
-  (:shift #x0001)
-  (:control #x0002)
-  (:alt #x0004)
-  (:super #x0008))
+(defbitfield (mod-keys)
+  :shift
+  :control
+  :alt
+  :super)
 
 (defcenum (mouse)
   (:1 0)
@@ -281,19 +287,23 @@
   (:opengl-debug-context #x00022007)
   (:opengl-profile #X00022008))
 
-;; (:opengl-api #X00030001)
-;; (:opengl-es-api #X00030002)
+(defcenum (opengl-api)
+  (:opengl-api #X00030001)
+  (:opengl-es-api #X00030002))
 
-;; (:no-robustness 0)
-;; (:no-reset-notification #x00031001)
-;; (:lose-context-on-reset #x00031002)
+(defcenum (robustness)
+  (:no-robustness 0)
+  (:no-reset-notification #x00031001)
+  (:lose-context-on-reset #x00031002))
 
-;; (:opengl-any-profile 0)
-;; (:opengl-core-profile #x00032001)
-;; (:opengl-compat-profile #x00032002)
+(defcenum (opengl-profile)
+  (:opengl-any-profile 0)
+  (:opengl-core-profile #x00032001)
+  (:opengl-compat-profile #x00032002))
 
-;; (:connected #X00040001)
-;; (:disconnected #X00040002)
+(defcenum (monitor-event)
+  (:connected #X00040001)
+  (:disconnected #X00040002))
 
 (defcenum (input-mode)
   (:cursor #X00033001)
@@ -553,14 +563,16 @@ Returns previously set callback."
 (defun get-joystick-axes (joystick)
   "Returns list of values for each axes of the joystick."
   (with-foreign-object (count :int)
-    (c-array->list (foreign-funcall "glfwGetJoystickAxes" monitor monitor :pointer count
+    (c-array->list (foreign-funcall "glfwGetJoystickAxes"
+				    :int joystick :pointer count
 				    :void)
 		   count :float)))
 
 (defun get-joystick-buttons (joystick)
   "Returns list of values for each button of the joystick."
   (with-foreign-object (count :int)
-    (c-array->list (foreign-funcall "glfwGetJoystickButtons" monitor monitor :pointer count
+    (c-array->list (foreign-funcall "glfwGetJoystickButtons"
+				    :int joystick :pointer count
 				    :void)
 		   count key-action)))
 
