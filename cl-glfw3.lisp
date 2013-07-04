@@ -330,8 +330,8 @@ SHARED: The window whose context to share resources with."
 
 (defmacro def-key-callback (name (window key scancode action mod-keys) &body body)
   `(cffi:defcallback ,name :void
-       ((,window :pointer) (,key %glfw:key) (,scancode :int)
-	(,action %glfw:key-action) (mod-keys %glfw:mod-keys))
+       ((,window :pointer) (,key %glfw::key) (,scancode :int)
+	(,action %glfw::key-action) (mod-keys %glfw::mod-keys))
      ,@body))
 
 (defmacro def-char-callback (name (window char) &body body)
@@ -343,8 +343,8 @@ SHARED: The window whose context to share resources with."
 
 (defmacro def-mouse-button-callback (name (window button action mod-keys) &body body)
   `(cffi:defcallback ,name :void
-       ((,window :pointer) (,button %glfw:mouse)
-	(,action %glfw:key-action) (,mod-keys %glfw:mod-keys))
+       ((,window :pointer) (,button %glfw::mouse)
+	(,action %glfw::key-action) (,mod-keys %glfw::mod-keys))
      ,@body))
 
 (defmacro def-cursor-pos-callback (name (window x y) &body body)
