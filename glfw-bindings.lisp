@@ -311,9 +311,9 @@
   (:sticky-mouse-buttons #x00033003))
 
 (defcenum (cursor-mode)
-  (:cursor-normal #X00034001)
-  (:cursor-hidden #X00034002)
-  (:cursor-disabled #X00034003))
+  (:normal #X00034001)
+  (:hidden #X00034002)
+  (:disabled #X00034003))
 
 (defcstruct video-mode
   (width :int)
