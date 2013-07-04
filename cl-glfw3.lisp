@@ -62,6 +62,7 @@
    def-cursor-pos-callback
    def-cursor-enter-callback
    def-scroll-callback
+   set-key-callback
    set-char-callback
    set-mouse-button-callback
    set-cursor-position-callback
@@ -98,7 +99,6 @@
      (if (%glfw:init)
 	 (unwind-protect
 	      (progn
-		(%glfw:set-error-callback *error-fun*)
 		,@body)
 	   (%glfw:terminate))
 	 (error "Error initializing glfw."))))
@@ -191,8 +191,8 @@ SHARED: The window whose context to share resources with."
 (defun window-should-close-p (&optional (window *window*))
   (%glfw:window-should-close-p window))
 
-(defun set-window-should-close (&optional (window *window*))
-  (%glfw:set-window-should-close window))
+(defun set-window-should-close (&optional (window *window*) (closep t))
+  (%glfw:set-window-should-close window closep))
 
 (defun set-window-title (title &optional (window *window*))
   (%glfw:set-window-title window title))
@@ -278,23 +278,23 @@ SHARED: The window whose context to share resources with."
        ((,window :pointer) (,w :int) (,h :int))
      ,@body))
 
-(defun set-window-position-callback (callback-name)
-  (%glfw:set-window-position-callback (cffi:get-callback callback-name)))
+(defun set-window-position-callback (callback-name &optional (window *window*))
+  (%glfw:set-window-position-callback window (cffi:get-callback callback-name)))
 
-(defun set-window-size-callback (callback-name)
-  (%glfw:set-window-size-callback (cffi:get-callback callback-name)))
+(defun set-window-size-callback (callback-name &optional (window *window*))
+  (%glfw:set-window-size-callback window (cffi:get-callback callback-name)))
 
-(defun set-window-close-callback (callback-name)
-  (%glfw:set-window-close-callback (cffi:get-callback callback-name)))
+(defun set-window-close-callback (callback-name &optional (window *window*))
+  (%glfw:set-window-close-callback window (cffi:get-callback callback-name)))
 
-(defun set-window-focus-callback (callback-name)
-  (%glfw:set-window-focus-callback (cffi:get-callback callback-name)))
+(defun set-window-focus-callback (callback-name &optional (window *window*))
+  (%glfw:set-window-focus-callback window (cffi:get-callback callback-name)))
 
-(defun set-window-iconify-callback (callback-name)
-  (%glfw:set-window-iconify-callback (cffi:get-callback callback-name)))
+(defun set-window-iconify-callback (callback-name &optional (window *window*))
+  (%glfw:set-window-iconify-callback window (cffi:get-callback callback-name)))
 
-(defun set-framebuffer-size-callback (callback-name)
-  (%glfw:set-framebuffer-size-callback (cffi:get-callback callback-name)))
+(defun set-framebuffer-size-callback (callback-name &optional (window *window*))
+  (%glfw:set-framebuffer-size-callback window (cffi:get-callback callback-name)))
 
 ;;;; ## Events and input
 (import-export %glfw:poll-events %glfw:wait-events)
@@ -362,23 +362,23 @@ SHARED: The window whose context to share resources with."
        ((,window :pointer) (,x :double) (,y :double))
      ,@body))
 
-(defun set-key-callback (callback-name)
-  (%glfw:set-key-callback (cffi:get-callback callback-name)))
+(defun set-key-callback (callback-name &optional (window *window*))
+  (%glfw:set-key-callback window (cffi:get-callback callback-name)))
 
-(defun set-char-callback (callback-name)
-  (%glfw:set-char-callback (cffi:get-callback callback-name)))
+(defun set-char-callback (callback-name &optional (window *window*))
+  (%glfw:set-char-callback window (cffi:get-callback callback-name)))
 
-(defun set-mouse-button-callback (callback-name)
-  (%glfw:set-mouse-button-callback (cffi:get-callback callback-name)))
+(defun set-mouse-button-callback (callback-name &optional (window *window*))
+  (%glfw:set-mouse-button-callback window (cffi:get-callback callback-name)))
 
-(defun set-cursor-position-callback (callback-name)
-  (%glfw:set-cursor-position-callback (cffi:get-callback callback-name)))
+(defun set-cursor-position-callback (callback-name &optional (window *window*))
+  (%glfw:set-cursor-position-callback window (cffi:get-callback callback-name)))
 
-(defun set-cursor-enter-callback (callback-name)
-  (%glfw:set-cursor-enter-callback (cffi:get-callback callback-name)))
+(defun set-cursor-enter-callback (callback-name &optional (window *window*))
+  (%glfw:set-cursor-enter-callback window (cffi:get-callback callback-name)))
 
-(defun set-scroll-callback (callback-name)
-  (%glfw:set-scroll-callback (cffi:get-callback callback-name)))
+(defun set-scroll-callback (callback-name &optional (window *window*))
+  (%glfw:set-scroll-callback window (cffi:get-callback callback-name)))
 
 (import-export %glfw:joystick-present-p %glfw:get-joystick-axes %glfw:get-joystick-buttons %glfw:get-joystick-name)
 
