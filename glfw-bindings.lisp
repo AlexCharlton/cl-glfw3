@@ -7,6 +7,8 @@
 (export
  '(init
    terminate
+   get-version
+   get-version-string
    set-error-callback
    get-monitors
    get-primary-monitor
@@ -335,6 +337,15 @@
 ;;;; ## GLFW Functions
 (defcfun ("glfwInit" init) :boolean)
 (defcfun ("glfwTerminate" terminate) :void)
+
+(defun get-version ()
+  "Returns major, minor, and revison numbers of GLFW library. May be called before INIT."
+  (with-foreign-objects ((major :int) (minor :int) (rev :int))
+    (foreign-funcall "glfwGetVersion" :pointer major :pointer minor :pointer rev)
+    (values (mem-ref major :int) (mem-ref minor :int) (mem-ref rev :int))))
+
+(defcfun ("glfwGetVersionString" get-version-string) :string)
+
 (defcfun ("glfwSetErrorCallback" set-error-callback) :pointer
   "ERROR-FUN is of type 'void (* GLFWerrorfun)(int,const char*)'.
 Returns the previous error callback."

@@ -77,6 +77,9 @@
    with-context
    swap-buffers))
 
+(when (/= (%glfw:get-version) 3)
+    (error "Local GLFW is not version 3.x"))
+
 ;;;; ## Window and monitor functions
 (defmacro import-export (&rest symbols)
   `(eval-when (:compile-toplevel :load-toplevel :execute)
@@ -410,10 +413,8 @@ SHARED: The window whose context to share resources with."
   (%glfw:get-current-context))
 
 (defmacro with-context (window &body body)
-  (let ((saved-window (gensym "window")))
-    `(let* ((,saved-window *window*)
-	    (*window* ,window))
-       ,@body)))
+  `(let* ((*window* ,window))
+     ,@body))
 
 (defun swap-buffers (&optional (window *window*))
   (%glfw:swap-buffers window))
