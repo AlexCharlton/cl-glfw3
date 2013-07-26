@@ -1,7 +1,7 @@
 # cl-glfw3
 Bindings for the [GLFW library](http://glfw.org/), version 3.x, for Common Lisp. These bindings have been enhanced with several conveniences, as described in `cl-glfw3.lisp`.
 
-Direct bindings to all GLFW functions can be found in the package `%glfw` (`glfw-bindings.lisp`).
+Direct bindings to all GLFW functions can be found in the system `%glfw` (`glfw-bindings.lisp`).
 
 cl-glfw3 is Quicklisp installable! Just type `(ql:quickload :cl-gfwl3)`. Running the resulting system requires GLFW version 3.x and [libffi](http://sourceware.org/libffi/) to be installed on your computer.
 
