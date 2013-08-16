@@ -399,7 +399,7 @@ SHARED: The window whose context to share resources with."
   (%glfw:set-clipboard-string window string))
 
 (defun get-clipboard-string (&optional (window *window*))
-  (%glfw:set-clipboard-string window))
+  (%glfw:get-clipboard-string window))
 
 ;;;; ## Time
 (import-export %glfw:get-time  %glfw:set-time)
