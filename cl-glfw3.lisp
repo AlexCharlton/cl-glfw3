@@ -342,7 +342,7 @@ SHARED: The window whose context to share resources with."
 (defmacro def-key-callback (name (window key scancode action mod-keys) &body body)
   `(cffi:defcallback ,name :void
        ((,window :pointer) (,key %glfw::key) (,scancode :int)
-	(,action %glfw::key-action) (mod-keys %glfw::mod-keys))
+	(,action %glfw::key-action) (,mod-keys %glfw::mod-keys))
      ,@body))
 
 (defmacro def-char-callback (name (window char) &body body)
