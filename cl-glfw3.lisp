@@ -236,9 +236,9 @@ SHARED: The window whose context to share resources with."
   (%glfw:hide-window window))
 
 (defun get-window-monitor (&optional (window *window*))
-  (let ((monitor (%glfw:get-window-monitor window))))
-  (unless (eq monitor (cffi:null-pointer))
-    monitor))
+  (let ((monitor (%glfw:get-window-monitor window)))
+    (unless (eq monitor (cffi:null-pointer))
+      monitor)))
 
 (defun get-window-attribute (attribute &optional (window *window*))
   (let ((value (%glfw:get-window-attribute window attribute)))
