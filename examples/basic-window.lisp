@@ -5,6 +5,7 @@
 (export '(basic-window-example))
 
 (def-key-callback key-callback (window key scancode action mod-keys)
+  (declare (ignore window scancode mod-keys))
   (when (and (eq key :escape) (eq action :press))
     (set-window-should-close)))
 
@@ -26,6 +27,7 @@
   (gl:load-identity))
 
 (def-window-size-callback window-size-callback (window w h)
+  (declare (ignore window))
   (set-viewport w h))
 
 (defun basic-window-example ()
