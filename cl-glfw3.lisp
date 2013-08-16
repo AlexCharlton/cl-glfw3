@@ -89,9 +89,11 @@
      (export ',symbols)))
 
 (defmacro def-error-callback (name (message) &body body)
-  `(cffi:defcallback ,name :void
-       ((,(gensym "error-code") :int) (,message :string))
-     ,@body))
+  (let ((error-code (gensym "error-code")))
+    `(cffi:defcallback ,name :void
+	 ((,error-code :int) (,message :string))
+       (declare (ignore ,error-code))
+       ,@body)))
 
 (def-error-callback default-error-fun (message)
   (error message))
