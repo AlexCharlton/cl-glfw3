@@ -77,8 +77,9 @@
    with-context
    swap-buffers))
 
-(when (/= (%glfw:get-version) 3)
-    (error "Local GLFW is not version 3.x"))
+(multiple-value-bind (major minor rev) (%glfw:get-version)
+  (when (/= major 3)
+    (error "Local GLFW is ~a.~a.~a, should be above 3.x" major minor rev)))
 
 ;;;; ## Window and monitor functions
 (defmacro import-export (&rest symbols)
