@@ -5,7 +5,7 @@
   :description "Bindings for GLFW 3.x"
   :author "Alex Charlton <alex.n.charlton@gmail.com>"
   :license "BSD-2"
-  :depends-on (#:cffi #:cffi-libffi)
+  :depends-on (#:alexandria #:cffi #:cffi-libffi)
   :components ((:file "package")
                (:file "glfw-bindings")
                (:file "cl-glfw3")))

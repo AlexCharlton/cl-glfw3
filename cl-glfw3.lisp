@@ -16,6 +16,7 @@
 (export
  '(def-error-callback
    set-error-callback
+   initialize
    with-init
    def-monitor-callback
    *window*
@@ -77,8 +78,9 @@
    with-context
    swap-buffers))
 
-(when (/= (%glfw:get-version) 3)
-    (error "Local GLFW is not version 3.x"))
+(multiple-value-bind (major minor rev) (%glfw:get-version)
+  (when (/= major 3)
+    (error (format nil "Local GLFW is version ~A.~A.~A" major minor rev))))
 
 ;;;; ## Window and monitor functions
 (defmacro import-export (&rest symbols)
@@ -87,9 +89,11 @@
      (export ',symbols)))
 
 (defmacro def-error-callback (name (message) &body body)
-  `(cffi:defcallback ,name :void
-       ((,(gensym "error-code") :int) (,message :string))
-     ,@body))
+  (with-gensyms (error-code)
+    `(cffi:defcallback ,name :void
+	 ((,error-code :int) (,message :string))
+       (declare (ignorable ,error-code))
+       ,@body)))
 
 (def-error-callback default-error-fun (message)
   (error message))
@@ -97,20 +101,24 @@
 (defun set-error-callback (callback-name)
   (%glfw:set-error-callback (cffi:get-callback callback-name)))
 
+(defun initialize ()
+  "Start GLFW"
+  (let ((result (%glfw:init)))
+    (unless result
+      (error "Error initializing glfw."))
+    result))
+
 (defmacro with-init (&body body)
   "Wrap BODY with an initialized GLFW instance, ensuring proper termination. If no error callback is set when this is called, a default error callback is set."
   `(progn
      (let ((prev-error-fun (set-error-callback 'default-error-fun)))
        (unless (eq prev-error-fun (cffi:null-pointer))
 	 (%glfw:set-error-callback prev-error-fun)))
-     (if (%glfw:init)
-	 (unwind-protect
-	      (progn
-		,@body)
-	   (%glfw:terminate))
-	 (error "Error initializing glfw."))))
+     (initialize)
+     (unwind-protect (progn ,@body)
+       (%glfw:terminate))))
 
-(import-export %glfw:get-monitors %glfw:get-primary-monitor %glfw:get-monitor-physical-size %glfw:get-monitor-name %glfw:set-monitor-callback %glfw:get-video-modes %glfw:get-video-mode %glfw:set-gamma %glfw:get-gamma-ramp %glfw:set-gamma-ramp)
+(import-export %glfw:get-monitors %glfw:get-primary-monitor %glfw:get-monitor-physical-size %glfw:get-monitor-name %glfw:set-monitor-callback %glfw:get-video-modes %glfw:get-video-mode %glfw:set-gamma %glfw:get-gamma-ramp %glfw:set-gamma-ramp %glfw:terminate)
 
 (defmacro def-monitor-callback (name (monitor event) &body body)
   `(cffi:defcallback ,name :void
@@ -236,9 +244,9 @@ SHARED: The window whose context to share resources with."
   (%glfw:hide-window window))
 
 (defun get-window-monitor (&optional (window *window*))
-  (let ((monitor (%glfw:get-window-monitor window))))
-  (unless (eq monitor (cffi:null-pointer))
-    monitor))
+  (let ((monitor (%glfw:get-window-monitor window)))
+    (unless (eq monitor (cffi:null-pointer))
+      monitor)))
 
 (defun get-window-attribute (attribute &optional (window *window*))
   (let ((value (%glfw:get-window-attribute window attribute)))
@@ -342,7 +350,7 @@ SHARED: The window whose context to share resources with."
 (defmacro def-key-callback (name (window key scancode action mod-keys) &body body)
   `(cffi:defcallback ,name :void
        ((,window :pointer) (,key %glfw::key) (,scancode :int)
-	(,action %glfw::key-action) (mod-keys %glfw::mod-keys))
+	(,action %glfw::key-action) (,mod-keys %glfw::mod-keys))
      ,@body))
 
 (defmacro def-char-callback (name (window char) &body body)
@@ -399,7 +407,7 @@ SHARED: The window whose context to share resources with."
   (%glfw:set-clipboard-string window string))
 
 (defun get-clipboard-string (&optional (window *window*))
-  (%glfw:set-clipboard-string window))
+  (%glfw:get-clipboard-string window))
 
 ;;;; ## Time
 (import-export %glfw:get-time  %glfw:set-time)
