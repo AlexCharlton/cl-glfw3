@@ -16,6 +16,7 @@
 (export
  '(def-error-callback
    set-error-callback
+   initialize
    with-init
    def-monitor-callback
    *window*
@@ -98,20 +99,24 @@
 (defun set-error-callback (callback-name)
   (%glfw:set-error-callback (cffi:get-callback callback-name)))
 
+(defun initialize ()
+  "Start GLFW"
+  (let ((result (%glfw:init)))
+    (unless result
+      (error "Error initializing glfw."))
+    result))
+
 (defmacro with-init (&body body)
   "Wrap BODY with an initialized GLFW instance, ensuring proper termination. If no error callback is set when this is called, a default error callback is set."
   `(progn
      (let ((prev-error-fun (set-error-callback 'default-error-fun)))
        (unless (eq prev-error-fun (cffi:null-pointer))
 	 (%glfw:set-error-callback prev-error-fun)))
-     (if (%glfw:init)
-	 (unwind-protect
-	      (progn
-		,@body)
-	   (%glfw:terminate))
-	 (error "Error initializing glfw."))))
+     (initialize)
+     (unwind-protect (progn ,@body)
+       (%glfw:terminate))))
 
-(import-export %glfw:get-monitors %glfw:get-primary-monitor %glfw:get-monitor-physical-size %glfw:get-monitor-name %glfw:set-monitor-callback %glfw:get-video-modes %glfw:get-video-mode %glfw:set-gamma %glfw:get-gamma-ramp %glfw:set-gamma-ramp)
+(import-export %glfw:get-monitors %glfw:get-primary-monitor %glfw:get-monitor-physical-size %glfw:get-monitor-name %glfw:set-monitor-callback %glfw:get-video-modes %glfw:get-video-mode %glfw:set-gamma %glfw:get-gamma-ramp %glfw:set-gamma-ramp %glfw:terminate)
 
 (defmacro def-monitor-callback (name (monitor event) &body body)
   `(cffi:defcallback ,name :void
