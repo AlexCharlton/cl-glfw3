@@ -2,7 +2,7 @@
 
 (defpackage #:cl-glfw3
   (:nicknames :glfw)
-  (:use #:cl))
+  (:use #:alexandria #:cl))
 
 (defpackage #:%cl-glfw3
   (:nicknames :%glfw)

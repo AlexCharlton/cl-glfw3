@@ -77,8 +77,9 @@
    with-context
    swap-buffers))
 
-(when (/= (%glfw:get-version) 3)
-    (error "Local GLFW is not version 3.x"))
+(multiple-value-bind (major minor rev) (%glfw:get-version)
+  (when (/= major 3)
+    (error (format nil "Local GLFW is version ~A.~A.~A" major minor rev))))
 
 ;;;; ## Window and monitor functions
 (defmacro import-export (&rest symbols)
@@ -87,9 +88,11 @@
      (export ',symbols)))
 
 (defmacro def-error-callback (name (message) &body body)
-  `(cffi:defcallback ,name :void
-       ((,(gensym "error-code") :int) (,message :string))
-     ,@body))
+  (with-gensyms (error-code)
+    `(cffi:defcallback ,name :void
+	 ((,error-code :int) (,message :string))
+       (declare (ignorable ,error-code))
+       ,@body)))
 
 (def-error-callback default-error-fun (message)
   (error message))
@@ -236,9 +239,9 @@ SHARED: The window whose context to share resources with."
   (%glfw:hide-window window))
 
 (defun get-window-monitor (&optional (window *window*))
-  (let ((monitor (%glfw:get-window-monitor window))))
-  (unless (eq monitor (cffi:null-pointer))
-    monitor))
+  (let ((monitor (%glfw:get-window-monitor window)))
+    (unless (eq monitor (cffi:null-pointer))
+      monitor)))
 
 (defun get-window-attribute (attribute &optional (window *window*))
   (let ((value (%glfw:get-window-attribute window attribute)))
@@ -342,7 +345,7 @@ SHARED: The window whose context to share resources with."
 (defmacro def-key-callback (name (window key scancode action mod-keys) &body body)
   `(cffi:defcallback ,name :void
        ((,window :pointer) (,key %glfw::key) (,scancode :int)
-	(,action %glfw::key-action) (mod-keys %glfw::mod-keys))
+	(,action %glfw::key-action) (,mod-keys %glfw::mod-keys))
      ,@body))
 
 (defmacro def-char-callback (name (window char) &body body)
@@ -399,7 +402,7 @@ SHARED: The window whose context to share resources with."
   (%glfw:set-clipboard-string window string))
 
 (defun get-clipboard-string (&optional (window *window*))
-  (%glfw:set-clipboard-string window))
+  (%glfw:get-clipboard-string window))
 
 ;;;; ## Time
 (import-export %glfw:get-time  %glfw:set-time)
