@@ -78,7 +78,7 @@
    get-proc-address))
 
 (define-foreign-library (glfw)
-     (t (:default "libglfw")))
+     (t (:or (:default "libglfw3") (:default "libglfw"))))
 
 (use-foreign-library glfw)
 
