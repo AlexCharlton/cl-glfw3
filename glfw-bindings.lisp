@@ -77,10 +77,84 @@
    extension-supported-p
    get-proc-address))
 
+;; internal stuff
+(export
+  '(define-glfw-callback))
+
 (define-foreign-library (glfw)
      (t (:or (:default "libglfw3") (:default "libglfw"))))
 
 (use-foreign-library glfw)
+
+;;;; ## Float trap masking for OS X
+
+;; Floating points traps need to be masked around certain
+;; foreign calls on sbcl/darwin. Some private part of Cocoa
+;; (Apple's GUI Framework) generates a SIGFPE that
+;; invokes SBCLs signal handler if they're not masked.
+;;
+;; Traps also need to be restored during lisp callback execution
+;; because SBCL relies on them to check division by zero, etc.
+;; This logic is encapsulated in DEFINE-GLFW-CALLBACK.
+;;
+;; It might become necessary to do this for other implementations, too.
+
+(defparameter *saved-lisp-fpu-modes* :unset)
+
+(defmacro with-float-traps-saved-and-masked (&body body)
+  "Turn off floating point traps and stash them
+during execution of the given BODY. Expands into a PROGN if
+this is not required for the current implementation."
+  #+(and sbcl darwin)
+    `(let ((*saved-lisp-fpu-modes* (sb-int:get-floating-point-modes)))
+       (sb-int:with-float-traps-masked (:inexact :invalid
+                                        :divide-by-zero :overflow
+                                        :underflow)
+         ,@body))
+  #-(and sbcl darwin)
+    `(progn ,@body))
+
+(defmacro with-float-traps-restored (&body body)
+  "Temporarily restore the saved float traps during execution
+of the given BODY. Expands into a PROGN if this is not required
+for the current implementation."
+  #+(and sbcl darwin)
+      (with-gensyms (modes)
+        `(let ((,modes (sb-int:get-floating-point-modes)))
+           (unwind-protect 
+                (progn
+                  (when (not (eq *saved-lisp-fpu-modes* :unset))
+                    (apply #'sb-int:set-floating-point-modes
+                           *saved-lisp-fpu-modes*))
+                  ,@body)
+             (apply #'sb-int:set-floating-point-modes ,modes))))
+  #-(and sbcl darwin)
+     `(progn ,@body))
+
+;; CFFI type wrapper
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (define-foreign-type float-traps-masked-type () ())
+
+  (define-parse-method float-traps-masked (actual-type)
+    (make-instance 'float-traps-masked-type :actual-type actual-type))
+
+  (defmethod expand-to-foreign (value (type float-traps-masked-type))
+    value)
+
+  (defmethod expand-from-foreign (value (type float-traps-masked-type))
+    `(with-float-traps-saved-and-masked ,value)))
+
+;;;; ## Helper Macros
+(defmacro define-glfw-callback (&whole whole name args &body body)
+  "Define a foreign callback. This macro is a thin wrapper around
+CFFI's defcallback that takes care of GLFW specifics."
+  (multiple-value-bind (actual-body decls doc)
+      (parse-body body :documentation t :whole whole)
+    `(defcallback ,name :void ,args
+       ,@(or doc)
+       ,@decls
+       (with-float-traps-restored
+         ,@actual-body))))
 
 ;;;; ## GLFW Types
 (defcenum (key-action)
@@ -409,7 +483,7 @@ Returns previously set callback."
 (defcfun ("glfwWindowHint" window-hint) :void
   (target window-hint) (hint :int))
 
-(defcfun ("glfwCreateWindow" create-window) window
+(defcfun ("glfwCreateWindow" create-window) (float-traps-masked window)
   "Returns a window pointer that shares resources with the window SHARED or NULL."
   (width :int) (height :int) (title :string) (monitor monitor) (shared window))
 
@@ -512,9 +586,9 @@ Returns previously set callback."
   (window window) (framebuffer-size-fun :pointer))
 
 ;;;; ### Events and input
-(defcfun ("glfwPollEvents" poll-events) :void)
+(defcfun ("glfwPollEvents" poll-events) (float-traps-masked :void))
 
-(defcfun ("glfwWaitEvents" wait-events) :void)
+(defcfun ("glfwWaitEvents" wait-events) (float-traps-masked :void))
 
 (defcfun ("glfwGetInputMode" get-input-mode) :int
   (window window) (mode input-mode))

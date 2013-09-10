@@ -6,4 +6,4 @@
 
 (defpackage #:%cl-glfw3
   (:nicknames :%glfw)
-  (:use #:cl #:cffi))
+  (:use #:cl #:cffi #:alexandria))
