@@ -9,13 +9,3 @@
   :components ((:file "package")
                (:file "glfw-bindings")
                (:file "cl-glfw3")))
-
-(asdf:defsystem #:cl-glfw3-examples
-  :serial t
-  :description "Examlples for cl-glfw3"
-  :author "Alex Charlton <alex.n.charlton@gmail.com>"
-  :license "BSD-2"
-  :depends-on (#:cl-glfw3 #:cl-opengl)
-  :pathname "examples/"
-  :components ((:file "package")
-               (:file "basic-window")))
