@@ -156,6 +156,11 @@ CFFI's defcallback that takes care of GLFW specifics."
        (with-float-traps-restored
          ,@actual-body))))
 
+(defmacro c-array->list (array count &optional (type :pointer))
+  (once-only (array)
+    (with-gensyms (i)
+      `(loop for ,i below ,count collect (mem-aref ,array ',type ,i)))))
+
 ;;;; ## GLFW Types
 (defcenum (key-action)
   :release
@@ -429,8 +434,9 @@ Returns the previous error callback."
 (defun get-monitors ()
   "Returns list of pointers to opaque monitor objects."
   (with-foreign-object (count :int)
-    (c-array->list (foreign-funcall "glfwGetMonitors" :pointer count :void)
-		   count monitor)))
+    (c-array->list (foreign-funcall "glfwGetMonitors" :pointer count :pointer)
+        (mem-ref count :int)
+        monitor)))
 
 (defcfun ("glfwGetPrimaryMonitor" get-primary-monitor) :pointer
   "Return the main monitor.")
@@ -460,11 +466,12 @@ Returns previously set callback."
 (defun get-video-modes (monitor)
   "Returns list of available video modes for the supplied monitor."
   (with-foreign-object (count :int)
-    (c-array->list (foreign-funcall "glfwGetMonitors" monitor monitor :pointer count
-				    :void)
-		   count '(:struct video-mode))))
+    (c-array->list(foreign-funcall "glfwGetVideoModes" monitor monitor :pointer count
+				    :pointer)
+        (mem-ref count :int)
+        (:pointer (:struct video-mode)))))
 
-(defcfun ("glfwGetVideoMode" get-video-mode) (:struct video-mode)
+(defcfun ("glfwGetVideoMode" get-video-mode) (:pointer (:struct video-mode))
   (monitor monitor))
 
 (defcfun ("glfwSetGamma" set-gamma) :void
@@ -650,16 +657,18 @@ Returns previously set callback."
   (with-foreign-object (count :int)
     (c-array->list (foreign-funcall "glfwGetJoystickAxes"
 				    :int joystick :pointer count
-				    :void)
-		   count :float)))
+				    :pointer)
+        (mem-ref count :int)
+        :float)))
 
 (defun get-joystick-buttons (joystick)
   "Returns list of values for each button of the joystick."
   (with-foreign-object (count :int)
     (c-array->list (foreign-funcall "glfwGetJoystickButtons"
 				    :int joystick :pointer count
-				    :void)
-		   count key-action)))
+				    :pointer)
+        (mem-ref count :int)
+        key-action)))
 
 (defcfun ("glfwGetJoystickName" get-joystick-name) :string
   (joystick :int))
@@ -694,8 +703,3 @@ Returns previously set callback."
 
 (defcfun ("glfwGetProcAddress" get-proc-address) :pointer
   (proc-name :string))
-
-;;;; ## Helper Functions
-(defun c-array->list (array count &optional (type :pointer))
-  (loop for i below count
-       collect (mem-aref array type i)))
