@@ -90,7 +90,7 @@
 
 (defmacro def-error-callback (name (message) &body body)
   (let ((error-code (gensym "error-code")))
-    `(cffi:defcallback ,name :void
+    `(%glfw:define-glfw-callback ,name
 	 ((,error-code :int) (,message :string))
        (declare (ignore ,error-code))
        ,@body)))
@@ -121,7 +121,7 @@
 (import-export %glfw:get-monitors %glfw:get-primary-monitor %glfw:get-monitor-physical-size %glfw:get-monitor-name %glfw:set-monitor-callback %glfw:get-video-modes %glfw:get-video-mode %glfw:set-gamma %glfw:get-gamma-ramp %glfw:set-gamma-ramp %glfw:terminate)
 
 (defmacro def-monitor-callback (name (monitor event) &body body)
-  `(cffi:defcallback ,name :void
+  `(%glfw:define-glfw-callback ,name
        ((,monitor :pointer) (,event %glfw::monitor-event))
      ,@body))
 
@@ -263,37 +263,37 @@ SHARED: The window whose context to share resources with."
   (list (get-window-attribute :context-version-major window) (get-window-attribute :context-version-minor window) (get-window-attribute :context-version-revision window)))
 
 (defmacro def-window-position-callback (name (window x y) &body body)
-  `(cffi:defcallback ,name :void
+  `(%glfw:define-glfw-callback ,name
        ((,window :pointer) (,x :int) (,y :int))
      ,@body))
 
 (defmacro def-window-size-callback (name (window w h) &body body)
-  `(cffi:defcallback ,name :void
+  `(%glfw:define-glfw-callback ,name
        ((,window :pointer) (,w :int) (,h :int))
      ,@body))
 
 (defmacro def-window-close-callback (name (window) &body body)
-  `(cffi:defcallback ,name :void
+  `(%glfw:define-glfw-callback ,name
        ((,window :pointer))
      ,@body))
 
 (defmacro def-window-refresh-callback (name (window) &body body)
-  `(cffi:defcallback ,name :void
+  `(%glfw:define-glfw-callback ,name
        ((,window :pointer))
      ,@body))
 
 (defmacro def-window-focus-callback (name (window focusedp) &body body)
-  `(cffi:defcallback ,name :void
+  `(%glfw:define-glfw-callback ,name
        ((,window :pointer) (,focusedp :boolean))
      ,@body))
 
 (defmacro def-window-iconify-callback (name (window iconifiedp) &body body)
-  `(cffi:defcallback ,name :void
+  `(%glfw:define-glfw-callback ,name
        ((,window :pointer) (,iconifiedp :boolean))
      ,@body))
 
 (defmacro def-framebuffer-size-callback (name (window w h) &body body)
-  `(cffi:defcallback ,name :void
+  `(%glfw:define-glfw-callback ,name
        ((,window :pointer) (,w :int) (,h :int))
      ,@body))
 
@@ -348,36 +348,36 @@ SHARED: The window whose context to share resources with."
   (%glfw:set-cursor-position window x y))
 
 (defmacro def-key-callback (name (window key scancode action mod-keys) &body body)
-  `(cffi:defcallback ,name :void
+  `(%glfw:define-glfw-callback ,name
        ((,window :pointer) (,key %glfw::key) (,scancode :int)
 	(,action %glfw::key-action) (,mod-keys %glfw::mod-keys))
      ,@body))
 
 (defmacro def-char-callback (name (window char) &body body)
   (let ((char-code (gensym "char")))
-    `(cffi:defcallback ,name :void
+    `(%glfw:define-glfw-callback ,name
 	((,window :pointer) (,char-code :unsigned-int))
       (let ((,char (code-char ,char-code)))
 	,@body))))
 
 (defmacro def-mouse-button-callback (name (window button action mod-keys) &body body)
-  `(cffi:defcallback ,name :void
+  `(%glfw:define-glfw-callback ,name
        ((,window :pointer) (,button %glfw::mouse)
 	(,action %glfw::key-action) (,mod-keys %glfw::mod-keys))
      ,@body))
 
 (defmacro def-cursor-pos-callback (name (window x y) &body body)
-  `(cffi:defcallback ,name :void
+  `(%glfw:define-glfw-callback ,name
        ((,window :pointer) (,x :double) (,y :double))
      ,@body))
 
 (defmacro def-cursor-enter-callback (name (window enterp) &body body)
-  `(cffi:defcallback ,name :void
+  `(%glfw:define-glfw-callback ,name
        ((,window :pointer) (,enterp :boolean))
      ,@body))
 
 (defmacro def-scroll-callback (name (window x y) &body body)
-  `(cffi:defcallback ,name :void
+  `(%glfw:define-glfw-callback ,name
        ((,window :pointer) (,x :double) (,y :double))
      ,@body))
 

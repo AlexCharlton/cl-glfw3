@@ -32,6 +32,7 @@
 
 (defun basic-window-example ()
   (with-init-window (:title "Window test" :width 600 :height 400)
+    (setf %gl:*gl-get-proc-address* #'get-proc-address)
     (set-key-callback 'key-callback)
     (set-window-size-callback 'window-size-callback)
     (gl:clear-color 0 0 0 0)
