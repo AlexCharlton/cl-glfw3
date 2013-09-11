@@ -144,7 +144,7 @@ for the current implementation."
   (defmethod expand-from-foreign (value (type float-traps-masked-type))
     `(with-float-traps-saved-and-masked ,value)))
 
-;;;; ## Helper Macros
+;;;; ## Helpers
 (defmacro define-glfw-callback (&whole whole name args &body body)
   "Define a foreign callback. This macro is a thin wrapper around
 CFFI's defcallback that takes care of GLFW specifics."
@@ -156,10 +156,8 @@ CFFI's defcallback that takes care of GLFW specifics."
        (with-float-traps-restored
          ,@actual-body))))
 
-(defmacro c-array->list (array count &optional (type :pointer))
-  (once-only (array)
-    (with-gensyms (i)
-      `(loop for ,i below ,count collect (mem-aref ,array ',type ,i)))))
+(defun c-array->list (array count &optional (type :pointer))
+  (loop for i below count collect (mem-aref array type i)))
 
 ;;;; ## GLFW Types
 (defcenum (key-action)
@@ -437,7 +435,7 @@ Returns the previous error callback."
   (with-foreign-object (count :int)
     (c-array->list (foreign-funcall "glfwGetMonitors" :pointer count :pointer)
         (mem-ref count :int)
-        monitor)))
+        'monitor)))
 
 (defcfun ("glfwGetPrimaryMonitor" get-primary-monitor) :pointer
   "Return the main monitor.")
@@ -467,10 +465,10 @@ Returns previously set callback."
 (defun get-video-modes (monitor)
   "Returns list of available video modes for the supplied monitor."
   (with-foreign-object (count :int)
-    (c-array->list(foreign-funcall "glfwGetVideoModes" monitor monitor :pointer count
+    (c-array->list (foreign-funcall "glfwGetVideoModes" monitor monitor :pointer count
 				    :pointer)
         (mem-ref count :int)
-        (:pointer (:struct video-mode)))))
+        '(:struct video-mode))))
 
 (defcfun ("glfwGetVideoMode" get-video-mode) (:pointer (:struct video-mode))
   (monitor monitor))
@@ -669,7 +667,7 @@ Returns previously set callback."
 				    :int joystick :pointer count
 				    :pointer)
         (mem-ref count :int)
-        key-action)))
+        'key-action)))
 
 (defcfun ("glfwGetJoystickName" get-joystick-name) :string
   (joystick :int))
