@@ -9,12 +9,9 @@
   (when (and (eq key :escape) (eq action :press))
     (set-window-should-close)))
 
-(defvar *spin* 0.0)
-
 (defmethod render ()
   (gl:clear :color-buffer)
   (gl:with-pushed-matrix
-    (gl:rotate *spin* 0 0 1)
     (gl:color 1 1 1)
     (gl:rect -25 -25 25 25)))
 
