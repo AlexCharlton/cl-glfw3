@@ -470,15 +470,19 @@ Returns previously set callback."
         (mem-ref count :int)
         '(:struct video-mode))))
 
-(defcfun ("glfwGetVideoMode" get-video-mode) (:pointer (:struct video-mode))
-  (monitor monitor))
+(defun get-video-mode (monitor)
+  (mem-ref (foreign-funcall "glfwGetVideoMode"
+                            monitor monitor (:pointer (:struct video-mode)))
+           '(:struct video-mode)))
 
 (defcfun ("glfwSetGamma" set-gamma) :void
 "Generates a 256-element gamma ramp from the specified exponent and then calls SET-GAMMA-RAMP with it."
   (monitor monitor) (gamma :float))
 
-(defcfun ("glfwGetGammaRamp" get-gamma-ramp) (:struct gamma-ramp)
-  (monitor monitor))
+(defun get-gamma-ramp (monitor)
+  (mem-ref (foreign-funcall "glfwGetGammaRamp"
+                            monitor monitor (:pointer (:struct gamma-ramp)))
+           '(:struct gamma-ramp)))
 
 (defcfun ("glfwSetGammaRamp" set-gamma-ramp) :void
   (monitor monitor) (ramp (:struct gamma-ramp)))
