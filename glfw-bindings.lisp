@@ -77,10 +77,89 @@
    extension-supported-p
    get-proc-address))
 
+;; internal stuff
+(export
+  '(define-glfw-callback))
+
 (define-foreign-library (glfw)
-     (t (:default "libglfw")))
+     (t (:or (:default "libglfw3") (:default "libglfw"))))
 
 (use-foreign-library glfw)
+
+;;;; ## Float trap masking for OS X
+
+;; Floating points traps need to be masked around certain
+;; foreign calls on sbcl/darwin. Some private part of Cocoa
+;; (Apple's GUI Framework) generates a SIGFPE that
+;; invokes SBCLs signal handler if they're not masked.
+;;
+;; Traps also need to be restored during lisp callback execution
+;; because SBCL relies on them to check division by zero, etc.
+;; This logic is encapsulated in DEFINE-GLFW-CALLBACK.
+;;
+;; It might become necessary to do this for other implementations, too.
+
+(defparameter *saved-lisp-fpu-modes* :unset)
+
+(defmacro with-float-traps-saved-and-masked (&body body)
+  "Turn off floating point traps and stash them
+during execution of the given BODY. Expands into a PROGN if
+this is not required for the current implementation."
+  #+(and sbcl darwin)
+    `(let ((*saved-lisp-fpu-modes* (sb-int:get-floating-point-modes)))
+       (sb-int:with-float-traps-masked (:inexact :invalid
+                                        :divide-by-zero :overflow
+                                        :underflow)
+         ,@body))
+  #-(and sbcl darwin)
+    `(progn ,@body))
+
+(defmacro with-float-traps-restored (&body body)
+  "Temporarily restore the saved float traps during execution
+of the given BODY. Expands into a PROGN if this is not required
+for the current implementation."
+  #+(and sbcl darwin)
+      (with-gensyms (modes)
+        `(let ((,modes (sb-int:get-floating-point-modes)))
+           (unwind-protect 
+                (progn
+                  (when (not (eq *saved-lisp-fpu-modes* :unset))
+                    (apply #'sb-int:set-floating-point-modes
+                           *saved-lisp-fpu-modes*))
+                  ,@body)
+             (apply #'sb-int:set-floating-point-modes ,modes))))
+  #-(and sbcl darwin)
+     `(progn ,@body))
+
+;; CFFI type wrapper
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (define-foreign-type float-traps-masked-type () ())
+
+  (define-parse-method float-traps-masked (actual-type)
+    (make-instance 'float-traps-masked-type :actual-type actual-type))
+
+  (defmethod expand-to-foreign (value (type float-traps-masked-type))
+    value)
+
+  (defmethod expand-from-foreign (value (type float-traps-masked-type))
+    `(with-float-traps-saved-and-masked ,value)))
+
+;;;; ## Helper Macros
+(defmacro define-glfw-callback (&whole whole name args &body body)
+  "Define a foreign callback. This macro is a thin wrapper around
+CFFI's defcallback that takes care of GLFW specifics."
+  (multiple-value-bind (actual-body decls doc)
+      (parse-body body :documentation t :whole whole)
+    `(defcallback ,name :void ,args
+       ,@(or doc)
+       ,@decls
+       (with-float-traps-restored
+         ,@actual-body))))
+
+(defmacro c-array->list (array count &optional (type :pointer))
+  (once-only (array)
+    (with-gensyms (i)
+      `(loop for ,i below ,count collect (mem-aref ,array ',type ,i)))))
 
 ;;;; ## GLFW Types
 (defcenum (key-action)
@@ -91,6 +170,7 @@
 (defcenum (key)
   (:unknown -1)
   (:space 32)
+  (:apostrophe 39)
   (:comma 44)
   (:minus 45)
   (:period 46)
@@ -105,8 +185,8 @@
   (:7 55)
   (:8 56)
   (:9 57)
-  (:semicolon 58)
-  (:equal 59)
+  (:semicolon 59)
+  (:equal 61)
   (:a 65)
   (:b 66)
   (:c 67)
@@ -132,12 +212,13 @@
   (:w 87)
   (:x 88)
   (:y 89)
-  (:left-bracket 90)
-  (:backslash 91)
-  (:right-bracket 92)
-  (:grave-accent 93)
-  (:world1 161)
-  (:world2 162)
+  (:z 90)
+  (:left-bracket 91)
+  (:backslash 92)
+  (:right-bracket 93)
+  (:grave-accent 96)
+  (:world-1 161)
+  (:world-2 162)
   (:escape 256)
   (:enter 257)
   (:tab 258)
@@ -182,23 +263,23 @@
   (:f23 312)
   (:f24 313)
   (:f25 314)
-  (:key-pad-0 320)
-  (:key-pad-1 321)
-  (:key-pad-2 322)
-  (:key-pad-3 323)
-  (:key-pad-4 324)
-  (:key-pad-5 325)
-  (:key-pad-6 326)
-  (:key-pad-7 327)
-  (:key-pad-8 328)
-  (:key-pad-9 329)
-  (:key-pad-decimal 330)
-  (:key-pad-divide 331)
-  (:key-pad-multiply 332)
-  (:key-pad-subtract 333)
-  (:key-pad-add 334)
-  (:key-pad-enter 335)
-  (:key-pad-equal 336)
+  (:kp-0 320)
+  (:kp-1 321)
+  (:kp-2 322)
+  (:kp-3 323)
+  (:kp-4 324)
+  (:kp-5 325)
+  (:kp-6 326)
+  (:kp-7 327)
+  (:kp-8 328)
+  (:kp-9 329)
+  (:kp-decimal 330)
+  (:kp-divide 331)
+  (:kp-multiply 332)
+  (:kp-subtract 333)
+  (:kp-add 334)
+  (:kp-enter 335)
+  (:kp-equal 336)
   (:left-shift 340)
   (:left-control 341)
   (:left-alt 342)
@@ -207,8 +288,7 @@
   (:right-control 345)
   (:right-alt 346)
   (:right-super 347)
-  (:menu 348)
-  (:last 348))
+  (:menu 348))
 
 (defbitfield (mod-keys)
   :shift
@@ -355,8 +435,9 @@ Returns the previous error callback."
 (defun get-monitors ()
   "Returns list of pointers to opaque monitor objects."
   (with-foreign-object (count :int)
-    (c-array->list (foreign-funcall "glfwGetMonitors" :pointer count :void)
-		   count monitor)))
+    (c-array->list (foreign-funcall "glfwGetMonitors" :pointer count :pointer)
+        (mem-ref count :int)
+        monitor)))
 
 (defcfun ("glfwGetPrimaryMonitor" get-primary-monitor) :pointer
   "Return the main monitor.")
@@ -386,11 +467,12 @@ Returns previously set callback."
 (defun get-video-modes (monitor)
   "Returns list of available video modes for the supplied monitor."
   (with-foreign-object (count :int)
-    (c-array->list (foreign-funcall "glfwGetMonitors" monitor monitor :pointer count
-				    :void)
-		   count '(:struct video-mode))))
+    (c-array->list(foreign-funcall "glfwGetVideoModes" monitor monitor :pointer count
+				    :pointer)
+        (mem-ref count :int)
+        (:pointer (:struct video-mode)))))
 
-(defcfun ("glfwGetVideoMode" get-video-mode) (:struct video-mode)
+(defcfun ("glfwGetVideoMode" get-video-mode) (:pointer (:struct video-mode))
   (monitor monitor))
 
 (defcfun ("glfwSetGamma" set-gamma) :void
@@ -409,7 +491,7 @@ Returns previously set callback."
 (defcfun ("glfwWindowHint" window-hint) :void
   (target window-hint) (hint :int))
 
-(defcfun ("glfwCreateWindow" create-window) window
+(defcfun ("glfwCreateWindow" create-window) (float-traps-masked window)
   "Returns a window pointer that shares resources with the window SHARED or NULL."
   (width :int) (height :int) (title :string) (monitor monitor) (shared window))
 
@@ -512,9 +594,9 @@ Returns previously set callback."
   (window window) (framebuffer-size-fun :pointer))
 
 ;;;; ### Events and input
-(defcfun ("glfwPollEvents" poll-events) :void)
+(defcfun ("glfwPollEvents" poll-events) (float-traps-masked :void))
 
-(defcfun ("glfwWaitEvents" wait-events) :void)
+(defcfun ("glfwWaitEvents" wait-events) (float-traps-masked :void))
 
 (defcfun ("glfwGetInputMode" get-input-mode) :int
   (window window) (mode input-mode))
@@ -576,16 +658,18 @@ Returns previously set callback."
   (with-foreign-object (count :int)
     (c-array->list (foreign-funcall "glfwGetJoystickAxes"
 				    :int joystick :pointer count
-				    :void)
-		   count :float)))
+				    :pointer)
+        (mem-ref count :int)
+        :float)))
 
 (defun get-joystick-buttons (joystick)
   "Returns list of values for each button of the joystick."
   (with-foreign-object (count :int)
     (c-array->list (foreign-funcall "glfwGetJoystickButtons"
 				    :int joystick :pointer count
-				    :void)
-		   count key-action)))
+				    :pointer)
+        (mem-ref count :int)
+        key-action)))
 
 (defcfun ("glfwGetJoystickName" get-joystick-name) :string
   (joystick :int))
@@ -620,8 +704,3 @@ Returns previously set callback."
 
 (defcfun ("glfwGetProcAddress" get-proc-address) :pointer
   (proc-name :string))
-
-;;;; ## Helper Functions
-(defun c-array->list (array count &optional (type :pointer))
-  (loop for i below count
-       collect (mem-aref array type i)))
