@@ -112,7 +112,7 @@
   "Wrap BODY with an initialized GLFW instance, ensuring proper termination. If no error callback is set when this is called, a default error callback is set."
   `(progn
      (let ((prev-error-fun (set-error-callback 'default-error-fun)))
-       (unless (eq prev-error-fun (cffi:null-pointer))
+       (unless (cffi:null-pointer-p prev-error-fun)
 	 (%glfw:set-error-callback prev-error-fun)))
      (initialize)
      (unwind-protect (progn ,@body)
@@ -185,7 +185,7 @@ SHARED: The window whose context to share resources with."
      (opengl-debug-context :boolean)
      (opengl-profile '%glfw::opengl-profile)))
   (let ((window (%glfw:create-window width height title monitor shared)))
-    (if (eql (cffi:null-pointer) window)
+    (if (cffi:null-pointer-p window)
 	(error "Error creating window.")
 	(make-context-current window))))
 
@@ -245,7 +245,7 @@ SHARED: The window whose context to share resources with."
 
 (defun get-window-monitor (&optional (window *window*))
   (let ((monitor (%glfw:get-window-monitor window)))
-    (unless (eq monitor (cffi:null-pointer))
+    (unless (cffi:null-pointer-p monitor)
       monitor)))
 
 (defun get-window-attribute (attribute &optional (window *window*))
