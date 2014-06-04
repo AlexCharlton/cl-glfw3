@@ -620,7 +620,7 @@ Returns previously set callback."
    (list (mem-ref x :double) (mem-ref y :double))))
 
 (defcfun ("glfwSetCursorPos" set-cursor-position) :void
-  (window window) (x :int) (y :int))
+  (window window) (x :double) (y :double))
 
 (defcfun ("glfwSetKeyCallback" set-key-callback) :pointer
   "KEY-FUN is a callback of type 'void (* GLFWkeyfun)(GLFWwindow*,int,int,int,int)'.
