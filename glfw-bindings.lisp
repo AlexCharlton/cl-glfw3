@@ -617,7 +617,7 @@ Returns previously set callback."
   (with-foreign-objects ((x :int) (y :int))
     (foreign-funcall "glfwGetCursorPos"
 		     window window :pointer x :pointer y :void)
-   (list (mem-ref x :int) (mem-ref y :int))))
+   (list (mem-ref x :double) (mem-ref y :double))))
 
 (defcfun ("glfwSetCursorPos" set-cursor-position) :void
   (window window) (x :int) (y :int))
