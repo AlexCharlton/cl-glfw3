@@ -82,7 +82,7 @@
   '(define-glfw-callback))
 
 (define-foreign-library (glfw)
-     (:unix "libglfw.so.3.0" "libglfw.so.3")
+     (:unix (:or "libglfw.so.3.0" "libglfw.so.3"))
      (t (:or (:default "libglfw3") (:default "libglfw"))))
 
 (use-foreign-library glfw)
@@ -122,7 +122,7 @@ for the current implementation."
   #+(and sbcl darwin)
       (with-gensyms (modes)
         `(let ((,modes (sb-int:get-floating-point-modes)))
-           (unwind-protect 
+           (unwind-protect
                 (progn
                   (when (not (eq *saved-lisp-fpu-modes* :unset))
                     (apply #'sb-int:set-floating-point-modes
