@@ -82,6 +82,7 @@
   '(define-glfw-callback))
 
 (define-foreign-library (glfw)
+     (:unix "libglfw.so.3.0" "libglfw.so.3")
      (t (:or (:default "libglfw3") (:default "libglfw"))))
 
 (use-foreign-library glfw)
