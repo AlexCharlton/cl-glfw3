@@ -153,8 +153,7 @@ CFFI's defcallback that takes care of GLFW specifics."
     `(defcallback ,name :void ,args
        ,@(or doc)
        ,@decls
-       (with-float-traps-restored
-         ,@actual-body))))
+       ,@actual-body)))
 
 (defun c-array->list (array count &optional (type :pointer))
   (loop for i below count collect (mem-aref array type i)))
