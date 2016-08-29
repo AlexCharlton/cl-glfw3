@@ -82,6 +82,11 @@
   '(define-glfw-callback))
 
 (define-foreign-library (glfw)
+     (:darwin (:or
+               ; homebrew naming
+               "libglfw3.0.dylib" "libglfw3.dylib"
+               ; cmake build naming
+               "libglfw.3.0.dylib" "libglfw.3.dylib"))
      (:unix (:or "libglfw.so.3.0" "libglfw.so.3"))
      (t (:or (:default "libglfw3") (:default "libglfw"))))
 
