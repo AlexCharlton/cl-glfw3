@@ -50,6 +50,7 @@
    set-framebuffer-size-callback
    poll-events
    wait-events
+   post-empty-event
    get-input-mode
    set-input-mode
    get-key
@@ -84,10 +85,10 @@
 (define-foreign-library (glfw)
      (:darwin (:or
                ; homebrew naming
-               "libglfw3.0.dylib" "libglfw3.dylib"
+               "libglfw3.1.dylib" "libglfw3.dylib"
                ; cmake build naming
-               "libglfw.3.0.dylib" "libglfw.3.dylib"))
-     (:unix (:or "libglfw.so.3.0" "libglfw.so.3"))
+               "libglfw.3.1.dylib" "libglfw.3.dylib"))
+     (:unix (:or "libglfw.so.3.1" "libglfw.so.3"))
      (t (:or (:default "libglfw3") (:default "libglfw"))))
 
 (use-foreign-library glfw)
@@ -605,6 +606,8 @@ Returns previously set callback."
 (defcfun ("glfwPollEvents" poll-events) (float-traps-masked :void))
 
 (defcfun ("glfwWaitEvents" wait-events) (float-traps-masked :void))
+
+(defcfun ("glfwPostEmptyEvent" post-empty-event) :void)
 
 (defcfun ("glfwGetInputMode" get-input-mode) :int
   (window window) (mode input-mode))
