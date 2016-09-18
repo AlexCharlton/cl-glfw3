@@ -316,7 +316,7 @@ SHARED: The window whose context to share resources with."
   (%glfw:set-framebuffer-size-callback window (cffi:get-callback callback-name)))
 
 ;;;; ## Events and input
-(import-export %glfw:poll-events %glfw:wait-events)
+(import-export %glfw:poll-events %glfw:wait-events %glfw:post-empty-event)
 
 (defun get-input-mode (mode &optional (window *window*))
   "Mode is one of :CURSOR :STICKY-KEYS or :STICKY-MOUSE-BUTTONS."
