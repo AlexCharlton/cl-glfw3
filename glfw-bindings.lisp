@@ -5,7 +5,8 @@
 (in-package #:%glfw)
 
 (export
- '(init
+ '(+dont-care+
+   init
    terminate
    get-version
    get-version-string
@@ -18,6 +19,9 @@
    set-monitor-callback
    get-video-modes
    get-video-mode
+   video-mode
+   width
+   height
    set-gamma
    get-gamma-ramp
    set-gamma-ramp
@@ -48,6 +52,7 @@
    set-window-focus-callback
    set-window-iconify-callback
    set-framebuffer-size-callback
+   set-window-monitor
    poll-events
    wait-events
    post-empty-event
@@ -165,6 +170,8 @@ CFFI's defcallback that takes care of GLFW specifics."
 
 (defun c-array->list (array count &optional (type :pointer))
   (loop for i below count collect (mem-aref array type i)))
+
+(alexandria:define-constant +dont-care+ -1)
 
 ;;;; ## GLFW Types
 (defcenum (key-action)
@@ -515,6 +522,11 @@ Returns previously set callback."
 
 (defcfun ("glfwSetWindowTitle" set-window-title) :void
   (window window) (title :string))
+
+(defcfun ("glfwSetWindowMonitor" set-window-monitor) :void
+    (window window) (monitor monitor)
+    (x-position :int) (y-position :int)
+    (width :int) (height :int) (refresh-rate :int))
 
 (defun get-window-position (window)
   "Returns position of upper left corner of window (x y) in screen coordinates."
