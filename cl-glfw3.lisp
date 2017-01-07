@@ -31,6 +31,7 @@
    set-window-position
    get-window-size
    set-window-size
+   set-window-monitor
    get-framebuffer-size
    iconify-window
    restore-window
@@ -158,7 +159,7 @@
 MONITOR: The monitor on which the window should be full-screen.
 SHARED: The window whose context to share resources with."
   (macrolet ((output-hints (&rest hints)
-	       `(progn 
+	       `(progn
 		  ,@(loop for (name type) in hints collect
 			 `(%glfw:window-hint
 			   ,(intern (string-upcase
@@ -230,6 +231,12 @@ SHARED: The window whose context to share resources with."
 
 (defun get-framebuffer-size (&optional (window *window*))
   (%glfw:get-framebuffer-size window))
+
+(defun set-window-monitor (monitor width height &key (window *window*)
+                                                  (x-position 0) (y-position 0)
+                                                  (refresh-rate %glfw:+dont-care+))
+  (let ((monitor (if (null monitor) (cffi:null-pointer) monitor)))
+    (%glfw:set-window-monitor window monitor x-position y-position width height refresh-rate)))
 
 (defun iconify-window (&optional (window *window*))
   (%glfw:iconify-window window))
