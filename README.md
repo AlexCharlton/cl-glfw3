@@ -34,6 +34,7 @@ These can be loaded through Quicklisp with:
 
 ```lisp
 (ql:quickload :cl-glfw3-examples)
+(cl-glfw3-examples:basic-window-example)
 ```
 
 ### Documentation
