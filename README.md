@@ -6,7 +6,7 @@ These bindings have been enhanced with several conveniences, as described in [cl
 
 Direct bindings to all GLFW functions can be found in the system `%glfw` [glfw-bindings.lisp](./glfw-bindings.lisp).
 
-### Quicklisp
+### Installing
 
 cl-glfw3 is Quicklisp installable! Just type:
 
@@ -14,7 +14,15 @@ cl-glfw3 is Quicklisp installable! Just type:
 (ql:quickload :cl-glfw3)
 ```
 
-Running the resulting system requires GLFW version 3.x and [libffi](http://sourceware.org/libffi/) to be installed on your computer.
+Running the resulting system requires [GLFW](http://www.glfw.org/) version 3.x and [libffi](http://sourceware.org/libffi/) to be installed on your computer.
+
+#### OSX
+
+ - `brew install glfw libffi`
+
+#### Ubuntu/Debian
+
+ - `sudo apt-get install libglfw3 libffi-dev`
 
 ### Examples
 
