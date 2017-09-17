@@ -2,9 +2,9 @@
 
 Bindings for the [GLFW library](http://glfw.org/), version 3.x, for Common Lisp.
 
-These bindings have been enhanced with several conveniences, as described in `cl-glfw3.lisp`.
+These bindings have been enhanced with several conveniences, as described in [cl-glfw3.lisp](./cl-glfw3.lisp).
 
-Direct bindings to all GLFW functions can be found in the system `%glfw` (`glfw-bindings.lisp`).
+Direct bindings to all GLFW functions can be found in the system `%glfw` [glfw-bindings.lisp](./glfw-bindings.lisp).
 
 ### Quicklisp
 
@@ -18,9 +18,9 @@ Running the resulting system requires GLFW version 3.x and [libffi](http://sourc
 
 ### Examples
 
-Examples can be found in the `examples` directory.
+Examples can be found in the [examples](./examples) directory.
 
-The examples rely on cl-opengl (which Quicklisp will take care of) and require that OpenGL be installed on your computer.
+The examples rely on [cl-opengl](https://github.com/3b/cl-opengl) (which Quicklisp will take care of) and require that OpenGL be installed on your computer.
 
 These can be loaded through Quicklisp with:
 
