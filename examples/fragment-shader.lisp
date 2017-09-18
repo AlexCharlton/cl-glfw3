@@ -1,6 +1,3 @@
-;;;; opengl.lisp
-;;;; OpenGL example code borrowed from cl-opengl
-
 (in-package #:cl-glfw3-examples)
 
 (export '(fragment-shader-example))
