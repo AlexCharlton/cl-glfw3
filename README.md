@@ -38,6 +38,7 @@ These can be loaded through Quicklisp with:
 (cl-glfw3-examples:events-example)
 (cl-glfw3-examples:basic-window-example)
 (cl-glfw3-examples:particles-basic-example)
+(cl-glfw3-examples:fragment-shader-example)
 ```
 
 ### Documentation
