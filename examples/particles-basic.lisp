@@ -3,7 +3,7 @@
 
 (in-package #:cl-glfw3-examples)
 
-(export '(opengl-example))
+(export '(particles-basic-example))
 
 ;; Try live-editing these variables in Emacs slime
 (defvar color 0)
@@ -70,10 +70,10 @@
   (declare (ignore window))
   (set-viewport w h))
 
-(defun opengl-example ()
+(defun particles-basic-example ()
   ;; Graphics calls on OS X must occur in the main thread
   (with-body-in-main-thread ()
-    (with-init-window (:title "OpenGL test" :width 600 :height 400)
+    (with-init-window (:title "OpenGL particle test" :width 600 :height 400)
       (set-key-callback 'quit-on-escape)
 
       ;; Callback for window resize events

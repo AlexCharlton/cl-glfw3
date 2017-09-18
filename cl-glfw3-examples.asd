@@ -9,4 +9,5 @@
   :pathname "examples/"
   :components ((:file "package")
                (:file "basic-window")
+               (:file "particles-basic")
                (:file "events")))

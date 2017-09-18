@@ -36,8 +36,8 @@ These can be loaded through Quicklisp with:
 (ql:quickload :cl-glfw3-examples)
 
 (cl-glfw3-examples:events-example)
-(cl-glfw3-examples:opengl-example)
 (cl-glfw3-examples:basic-window-example)
+(cl-glfw3-examples:particles-basic-example)
 ```
 
 ### Documentation
