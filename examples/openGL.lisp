@@ -77,7 +77,7 @@
       (set-key-callback 'quit-on-escape)
 
       ;; Callback for window resize events
-      (glfw:set-window-size-callback 'update-viewport)
+      (set-window-size-callback 'update-viewport)
       (set-viewport 800 400)
 
       ;; Our render-loop
