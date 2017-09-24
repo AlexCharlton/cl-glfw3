@@ -203,10 +203,30 @@ SHARED: The window whose context to share resources with."
 	  ,@body)
      (destroy-window)))
 
+(defmacro with-window-from-func (params-function &rest body)
+  "Passed a function which returns a list of parameters,
+   create a new window from those parameters.
+
+   (with-window-from-func (params-function my-object)
+     (loop ...))
+
+   Where (params-function my-object) => (:width 100 :height 200 :title \"My title\")"
+  `(unwind-protect
+        (progn
+          (apply #'glfw:create-window ,params-function)
+          ,@body)
+     (glfw:destroy-window)))
+
 (defmacro with-init-window ((&rest window-keys) &body body)
   "Convenience macro for setting up GLFW and opening a window."
   `(with-init
      (with-window ,window-keys ,@body)))
+
+(defmacro with-init-window-from-func (params-function &body body)
+  "Convience helper for functional return of window parameters
+   Where (params-function) => (:width 100 :height 200 :title \"My title\")"
+  `(with-init
+     (with-window-from-func ,window-keys ,@body)))
 
 (defun window-should-close-p (&optional (window *window*))
   (%glfw:window-should-close-p window))
