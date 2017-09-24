@@ -228,7 +228,7 @@ SHARED: The window whose context to share resources with."
      (with-window ,window-keys ,@body)))
 
 (defmacro with-init-window-from-list (params-list-or-func &body body)
-  "Convience helper for functional return of window parameters
+  "Convenience helper for functional return of window parameters
    Where (params-function) => (:width 100 :height 200 :title \"My title\")"
   `(with-init
      (with-window-from-func ,params-list-or-func ,@body)))
