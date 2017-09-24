@@ -203,17 +203,22 @@ SHARED: The window whose context to share resources with."
 	  ,@body)
      (destroy-window)))
 
-(defmacro with-window-from-func (params-function &rest body)
-  "Passed a function which returns a list of parameters,
+(defmacro with-window-from-list (params-list-or-func &rest body)
+  "Passed a list or a function which returns a list of parameters,
    create a new window from those parameters.
 
-   (with-window-from-func (params-function my-object)
+   ;; Where (params-list-or-func my-object) => (:width 100 :height 200 :title \"My title\")
+   (with-window-from-list (params-func my-object)
      (loop ...))
 
-   Where (params-function my-object) => (:width 100 :height 200 :title \"My title\")"
+   OR, pass a list
+
+   (with-window-from-list '(:width 100 :height 100 :title \"My title\")
+     (loop ...))
+   "
   `(unwind-protect
      (progn
-       (apply #'glfw:create-window ,params-function)
+       (apply #'glfw:create-window ,params-list-or-func)
        ,@body)
      (glfw:destroy-window)))
 
@@ -222,11 +227,11 @@ SHARED: The window whose context to share resources with."
   `(with-init
      (with-window ,window-keys ,@body)))
 
-(defmacro with-init-window-from-func (params-function &body body)
+(defmacro with-init-window-from-list (params-list-or-func &body body)
   "Convience helper for functional return of window parameters
    Where (params-function) => (:width 100 :height 200 :title \"My title\")"
   `(with-init
-     (with-window-from-func ,window-keys ,@body)))
+     (with-window-from-func ,params-list-or-func ,@body)))
 
 (defun window-should-close-p (&optional (window *window*))
   (%glfw:window-should-close-p window))
