@@ -212,9 +212,9 @@ SHARED: The window whose context to share resources with."
 
    Where (params-function my-object) => (:width 100 :height 200 :title \"My title\")"
   `(unwind-protect
-        (progn
-          (apply #'glfw:create-window ,params-function)
-          ,@body)
+     (progn
+       (apply #'glfw:create-window ,params-function)
+       ,@body)
      (glfw:destroy-window)))
 
 (defmacro with-init-window ((&rest window-keys) &body body)
