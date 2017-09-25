@@ -196,31 +196,11 @@ SHARED: The window whose context to share resources with."
     (setf *window* nil)))
 
 (defmacro with-window ((&rest window-keys) &body body)
-  "Passed a function which returns a list of parameters,
-   create a new window from those parameters.
-
-   ;; Where (params-list-or-func my-object) => (:width 100 :height 200 :title \"My title\")
-   (with-window-from-list (params-func my-object)
-     (loop ...))
-
-   OR, pass a list
-
-   (with-window-from-list (:width 100 :height 100 :title \"My title\")
-     (loop ...))
-   "
+  "Convenience macro for using windows."
   `(unwind-protect
-     (progn
-       ,(if (fboundp (car keys))
-
-          ;; Dealing with a function
-          ;; (with-window (my-function))
-          `(apply #'create-window ,window-keys)
-
-          ;; Dealing with a symbol
-          ;; (with-window (:width 100 :height 200))
-          `(create-window ,@window-keys))
-
-       ,@body)
+	(progn
+	  (create-window ,@window-keys)
+	  ,@body)
      (destroy-window)))
 
 (defmacro with-init-window ((&rest window-keys) &body body)

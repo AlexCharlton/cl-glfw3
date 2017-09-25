@@ -30,14 +30,11 @@
   (declare (ignore window))
   (set-viewport w h))
 
-(defun get-window-parameters ()
-  '(:title "Window test" :width 600 :height 400))
-
 (defun basic-window-example ()
   ;; Graphics calls on OS X must occur in the main thread
   (tmt:with-body-in-main-thread ()
     (glfw:with-init-window (:title "Window test" :width 600 :height 400)
-      ;(setf %gl:*gl-get-proc-address* #'get-proc-address)
+
       (glfw:set-key-callback 'quit-on-escape)
       (glfw:set-window-size-callback 'update-viewport)
       (gl:clear-color 0 0 0 0)
