@@ -210,17 +210,15 @@ SHARED: The window whose context to share resources with."
    "
   `(unwind-protect
      (progn
-       ,(cond
+       ,(if (fboundp (car keys))
 
-          ;; Dealing with a function?
+          ;; Dealing with a function
           ;; (with-window (my-function))
-          ((fboundp (car keys))
-            `(apply #'create-window ,window-keys))
-
+          `(apply #'create-window ,window-keys)
 
           ;; Dealing with a symbol
           ;; (with-window (:width 100 :height 200))
-          (t `(create-window ,@window-keys)))
+          `(create-window ,@window-keys))
 
        ,@body)
      (destroy-window)))
