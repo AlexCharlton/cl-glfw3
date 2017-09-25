@@ -1,4 +1,8 @@
-;;;; package.lisp
+(uiop/package:define-package
+  :cl-glfw3-examples/package (:nicknames :cl-glfw3-examples)
+  (:use-reexport
 
-(defpackage #:cl-glfw3-examples
-  (:use #:cl #:glfw #:alexandria #:trivial-main-thread))
+    :cl-glfw3-examples/examples/events
+    :cl-glfw3-examples/examples/basic-window
+    :cl-glfw3-examples/examples/particles-basic
+    :cl-glfw3-examples/examples/fragment-shader))

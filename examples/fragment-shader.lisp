@@ -1,14 +1,17 @@
-(in-package #:cl-glfw3-examples)
 
-(export '(fragment-shader-example))
+(defpackage :cl-glfw3-examples/examples/fragment-shader
+  (:use #:cl)
+  (:export #:fragment-shader-example))
+
+(in-package :cl-glfw3-examples/examples/fragment-shader)
 
 ;; Error handling for shader compilation events
 (define-condition compile-error (error)
   ((message
-    :initform nil
-    :initarg :message
-    :reader compile-error-message
-    :documentation "The reason given for the error")))
+     :initform nil
+     :initarg :message
+     :reader compile-error-message
+     :documentation "The reason given for the error")))
 
 (defparameter +vertex-shader-source+ "
 
@@ -38,7 +41,7 @@ void main()
 }
 ")
 
-(defvar *shader-prog* -1)
+(defvar *shader-prog* nil)
 (defvar *frag-shader* nil)
 (defvar *vert-shader* nil)
 
@@ -49,8 +52,8 @@ void main()
 
   ;; Update our time variable in the shader
   (gl:uniformf
-   (gl:get-uniform-location *shader-prog* "time")
-   (incf *shader-time* 0.01))
+    (gl:get-uniform-location *shader-prog* "time")
+    (incf *shader-time* 0.01))
 
   (gl:with-pushed-matrix
 
@@ -65,63 +68,56 @@ void main()
       (progn
 
         ;; Print to console & then throw error
-        (format t "~A~%" error-string)
+        (format t "Error: ~A~%" error-string)
+        (force-output)
         (error
-         'compile-error
-         :message error-string)))))
-
-(defun is-invalid-shader (shader)
-  (= shader -1))
+          'compile-error
+          :message error-string)))))
 
 (defun setup-shader ()
-  ;; Keep trying to load our shader (Allow user to fix compile errors)
-  (loop
-    while (is-invalid-shader *shader-prog*) do
+  ;; Create the OpenGL shader in memory
+  (setf *vert-shader* (gl:create-shader :vertex-shader))
+  (setf *frag-shader* (gl:create-shader :fragment-shader))
 
-      (with-simple-restart
-          (retry "Retry compiling shaders.")
+  ;; Copy our shader source to the OpenGL shader
+  (gl:shader-source *vert-shader* +vertex-shader-source+)
+  (gl:shader-source *frag-shader* +fragment-shader-source+)
 
-        ;; Create the OpenGL shader in memory
-        (setf *vert-shader* (gl:create-shader :vertex-shader))
-        (setf *frag-shader* (gl:create-shader :fragment-shader))
+  ;; Compile our shader sources into GPU bytecode
+  (gl:compile-shader *vert-shader*)
+  (gl:compile-shader *frag-shader*)
 
-        ;; Copy our shader source to the OpenGL shader
-        (gl:shader-source *vert-shader* +vertex-shader-source+)
-        (gl:shader-source *frag-shader* +fragment-shader-source+)
+  (check-shader-error *vert-shader*)
+  (check-shader-error *frag-shader*)
 
-        ;; Compile our shader sources into GPU bytecode
-        (gl:compile-shader *vert-shader*)
-        (gl:compile-shader *frag-shader*)
+  ;; Create the program which controls the shader activation
+  (setf *shader-prog* (gl:create-program))
 
-        (check-shader-error *vert-shader*)
-        (check-shader-error *frag-shader*)
+  ;; Then add our shaders to that program
+  ;; The same shader can be attached to different programs
+  (gl:attach-shader *shader-prog* *vert-shader*)
+  (gl:attach-shader *shader-prog* *frag-shader*)
 
-        ;; Create the program which controls the shader activation
-        (setf *shader-prog* (gl:create-program))
+  ;; Linking our shader puts everything together
+  (gl:link-program *shader-prog*)
 
-        ;; Then add our shaders to that program
-        ;; The same shader can be attached to different programs
-        (gl:attach-shader *shader-prog* *vert-shader*)
-        (gl:attach-shader *shader-prog* *frag-shader*)
-
-        ;; Linking our shader puts everything together
-        (gl:link-program *shader-prog*)
-
-        ;; We'll now draw with this shader in the future
-        (gl:use-program *shader-prog*))))
-
+  ;; We'll now draw with this shader in the future
+  (gl:use-program *shader-prog*))
 
 ;; Standard window setup below this line
 ;; -------------------------------------
 
-(def-key-callback quit-on-escape (window key scancode action mod-keys)
+(glfw:def-key-callback quit-on-escape (window key scancode action mod-keys)
   (declare (ignore window scancode mod-keys))
   (when (and (eq key :escape) (eq action :press))
-    (set-window-should-close)))
+    (glfw:set-window-should-close)))
 
 (defun set-viewport (width height)
   ;; Black background
   (gl:clear-color 0.2 0.2 0.2 0.2)
+
+  ;; Compile our shaders and use the program
+  (setup-shader)
 
   (gl:viewport 0 0 width height)
   (gl:matrix-mode :projection)
@@ -137,25 +133,24 @@ void main()
   (gl:matrix-mode :modelview)
   (gl:load-identity))
 
-(def-window-size-callback update-viewport (window w h)
+(glfw:def-window-size-callback update-viewport (window w h)
   (declare (ignore window))
   (set-viewport w h))
 
 (defun fragment-shader-example ()
   ;; Graphics calls on OS X must occur in the main thread
-  (with-body-in-main-thread ()
-    (with-init-window (:title "OpenGL test" :width 600 :height 400)
-      (set-key-callback 'quit-on-escape)
+  (tmt:with-body-in-main-thread ()
+    (glfw:with-init-window (:title "OpenGL test" :width 600 :height 400)
+      (glfw:set-key-callback 'quit-on-escape)
 
       ;; Callback for window resize events
-      (set-window-size-callback 'update-viewport)
+      (glfw:set-window-size-callback 'update-viewport)
+
+      ;; Setup our renderer
       (set-viewport 800 400)
 
-      ;; Compile our shaders and use the program
-      (setup-shader)
-
       ;; Our render-loop
-      (loop until (window-should-close-p)
-            do (render)
-            do (swap-buffers)
-            do (poll-events)))))
+      (loop until (glfw:window-should-close-p)
+        do (render)
+        do (glfw:swap-buffers)
+        do (glfw:poll-events)))))

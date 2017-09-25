@@ -1,13 +1,16 @@
 ;;;; basic-window.lisp
 ;;;; OpenGL example code borrowed from cl-opengl
-(in-package #:cl-glfw3-examples)
 
-(export '(basic-window-example))
+(defpackage :cl-glfw3-examples/examples/basic-window
+  (:use :cl :trivial-main-thread)
+  (:export #:basic-window-example))
 
-(def-key-callback quit-on-escape (window key scancode action mod-keys)
+(in-package :cl-glfw3-examples/examples/basic-window)
+
+(glfw:def-key-callback quit-on-escape (window key scancode action mod-keys)
   (declare (ignore window scancode mod-keys))
   (when (and (eq key :escape) (eq action :press))
-    (set-window-should-close)))
+    (glfw:set-window-should-close)))
 
 (defun render ()
   (gl:clear :color-buffer)
@@ -23,20 +26,21 @@
   (gl:matrix-mode :modelview)
   (gl:load-identity))
 
-(def-window-size-callback update-viewport (window w h)
+(glfw:def-window-size-callback update-viewport (window w h)
   (declare (ignore window))
   (set-viewport w h))
 
 (defun basic-window-example ()
   ;; Graphics calls on OS X must occur in the main thread
-  (with-body-in-main-thread ()
-    (with-init-window (:title "Window test" :width 600 :height 400)
-      (setf %gl:*gl-get-proc-address* #'get-proc-address)
-      (set-key-callback 'quit-on-escape)
-      (set-window-size-callback 'update-viewport)
+  (tmt:with-body-in-main-thread ()
+    (glfw:with-init-window (:title "Window test" :width 600 :height 400)
+
+      (glfw:set-key-callback 'quit-on-escape)
+      (glfw:set-window-size-callback 'update-viewport)
       (gl:clear-color 0 0 0 0)
       (set-viewport 600 400)
-      (loop until (window-should-close-p)
-         do (render)
-         do (swap-buffers)
-         do (poll-events)))))
+
+      (loop until (glfw:window-should-close-p)
+        do (render)
+        do (glfw:swap-buffers)
+        do (glfw:poll-events)))))
