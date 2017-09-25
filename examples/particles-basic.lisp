@@ -1,9 +1,11 @@
 ;;;; opengl.lisp
 ;;;; OpenGL example code borrowed from cl-opengl
 
-(in-package #:cl-glfw3-examples)
+(defpackage :cl-glfw3-examples/examples/particles-basic
+  (:use :cl)
+  (:export #:particles-basic-example))
 
-(export '(particles-basic-example))
+(in-package :cl-glfw3-examples/examples/particles-basic)
 
 ;; Try live-editing these variables in Emacs slime
 (defvar color 0)
@@ -43,10 +45,10 @@
 
          (gl:rect -25 -25 25 25))))
 
-(def-key-callback quit-on-escape (window key scancode action mod-keys)
+(glfw:def-key-callback quit-on-escape (window key scancode action mod-keys)
   (declare (ignore window scancode mod-keys))
   (when (and (eq key :escape) (eq action :press))
-    (set-window-should-close)))
+    (glfw:set-window-should-close)))
 
 (defun set-viewport (width height)
   ;; Black background
@@ -66,22 +68,24 @@
   (gl:matrix-mode :modelview)
   (gl:load-identity))
 
-(def-window-size-callback update-viewport (window w h)
+(glfw:def-window-size-callback update-viewport (window w h)
   (declare (ignore window))
   (set-viewport w h))
 
 (defun particles-basic-example ()
   ;; Graphics calls on OS X must occur in the main thread
-  (with-body-in-main-thread ()
-    (with-init-window (:title "OpenGL particle test" :width 600 :height 400)
-      (set-key-callback 'quit-on-escape)
+  (tmt:with-body-in-main-thread ()
+    (glfw:with-init-window (:title "OpenGL particle test" :width 600 :height 400)
+      (glfw:set-key-callback 'quit-on-escape)
 
       ;; Callback for window resize events
-      (set-window-size-callback 'update-viewport)
+      (glfw:set-window-size-callback 'update-viewport)
+
+      ;; Setup the renderer
       (set-viewport 800 400)
 
       ;; Our render-loop
-      (loop until (window-should-close-p)
+      (loop until (glfw:window-should-close-p)
             do (render)
-            do (swap-buffers)
-            do (poll-events)))))
+            do (glfw:swap-buffers)
+            do (glfw:poll-events)))))
