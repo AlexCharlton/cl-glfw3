@@ -267,7 +267,9 @@ SHARED: The window whose context to share resources with."
 
 (defun get-context-version (&optional (window *window*))
   "Convenience function returning (opengl-context-major-version opengl-context-minor-version opengl-context-revision)."
-  (list (get-window-attribute :context-version-major window) (get-window-attribute :context-version-minor window) (get-window-attribute :context-revision window)))
+  (list (get-window-attribute :context-version-major window)
+        (get-window-attribute :context-version-minor window)
+        (get-window-attribute :context-revision window)))
 
 (defmacro def-window-position-callback (name (window x y) &body body)
   `(%glfw:define-glfw-callback ,name
