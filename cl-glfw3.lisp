@@ -315,6 +315,9 @@ SHARED: The window whose context to share resources with."
 (defun set-window-close-callback (callback-name &optional (window *window*))
   (%glfw:set-window-close-callback window (cffi:get-callback callback-name)))
 
+(defun set-window-refresh-callback (callback-name &optional (window *window*))
+  (%glfw:set-window-refresh-callback window (cffi:get-callback callback-name)))
+
 (defun set-window-focus-callback (callback-name &optional (window *window*))
   (%glfw:set-window-focus-callback window (cffi:get-callback callback-name)))
 
