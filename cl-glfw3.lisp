@@ -27,6 +27,8 @@
    window-should-close-p
    set-window-should-close
    set-window-title
+   get-window-opacity
+   set-window-opacity
    get-window-position
    set-window-position
    get-window-size
@@ -216,6 +218,12 @@ SHARED: The window whose context to share resources with."
 
 (defun set-window-title (title &optional (window *window*))
   (%glfw:set-window-title window title))
+
+(defun get-window-opacity (&optional (window *window*))
+  (%glfw:get-window-opacity window))
+
+(defun set-window-opacity (x &optional (window *window*))
+  (%glfw:set-window-opacity window x))
 
 (defun get-window-position (&optional (window *window*))
   (%glfw:get-window-position window))

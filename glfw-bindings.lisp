@@ -32,6 +32,8 @@
    window-should-close-p
    set-window-should-close
    set-window-title
+   get-window-opacity
+   set-window-opacity
    get-window-position
    set-window-position
    get-window-size
@@ -538,6 +540,16 @@ Returns previously set callback."
 
 (defcfun ("glfwSetWindowPos" set-window-position) :void
   (window window) (x :int) (y :int))
+
+(defun get-window-opacity (window)
+  "Returns opacity of window."
+  (with-foreign-objects ((x :float))
+    (foreign-funcall "glfwGetWindowOpacity"
+                     window window :pointer x :void)
+    (mem-ref x :float)))
+
+(defcfun ("glfwSetWindowOpacity" set-window-opacity) :void
+  (window window) (x :float))
 
 (defun get-window-size (window)
   "Returns size (w h) in screen coordinates."
