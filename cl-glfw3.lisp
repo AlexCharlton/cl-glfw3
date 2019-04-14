@@ -33,6 +33,8 @@
    set-window-position
    get-window-size
    set-window-size
+   set-window-size-limits
+   set-window-aspect-ratio
    set-window-monitor
    get-framebuffer-size
    iconify-window
@@ -236,6 +238,12 @@ SHARED: The window whose context to share resources with."
 
 (defun set-window-size (w h &optional (window *window*))
   (%glfw:set-window-size window w h))
+
+(defun set-window-size-limits (minwidth minheight maxwidth maxheight &optional (window *window*))
+  (%glfw:set-window-size-limits window minwidth minheight maxwidth maxheight))
+
+(defun set-window-aspect-ratio (width height &optional (window *window*))
+  (%glfw:set-window-aspect-ratio window width height))
 
 (defun get-framebuffer-size (&optional (window *window*))
   (%glfw:get-framebuffer-size window))

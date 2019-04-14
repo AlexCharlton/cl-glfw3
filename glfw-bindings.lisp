@@ -38,6 +38,8 @@
    set-window-position
    get-window-size
    set-window-size
+   set-window-size-limits
+   set-window-aspect-ratio
    get-framebuffer-size
    iconify-window
    restore-window
@@ -560,6 +562,12 @@ Returns previously set callback."
 
 (defcfun ("glfwSetWindowSize" set-window-size) :void
   (window window) (w :int) (h :int))
+
+(defcfun ("glfwSetWindowSizeLimits" set-window-size-limits) :void
+  (window window) (minwidth :int) (minheight :int) (maxwidth :int) (maxheight :int))
+
+(defcfun ("glfwSetWindowAspectRatio" set-window-aspect-ratio) :void
+  (window window) (width :int) (height :int))
 
 (defun get-framebuffer-size (window)
   "Returns size (w h) of framebuffer in pixels."
