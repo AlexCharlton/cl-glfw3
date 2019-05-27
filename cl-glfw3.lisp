@@ -36,6 +36,7 @@
    set-window-size-limits
    set-window-aspect-ratio
    set-window-monitor
+   get-window-content-scale
    get-framebuffer-size
    iconify-window
    restore-window
@@ -123,7 +124,7 @@
      (unwind-protect (progn ,@body)
        (%glfw:terminate))))
 
-(import-export %glfw:get-monitors %glfw:get-primary-monitor %glfw:get-monitor-physical-size %glfw:get-monitor-name %glfw:set-monitor-callback %glfw:get-video-modes %glfw:get-video-mode %glfw:set-gamma %glfw:get-gamma-ramp %glfw:set-gamma-ramp %glfw:terminate)
+(import-export %glfw:get-monitors %glfw:get-primary-monitor %glfw:get-monitor-position %glfw:get-monitor-work-area %glfw:get-monitor-physical-size %glfw:get-monitor-content-scale %glfw:get-monitor-name %glfw:set-monitor-callback %glfw:get-video-modes %glfw:get-video-mode %glfw:set-gamma %glfw:get-gamma-ramp %glfw:set-gamma-ramp %glfw:terminate)
 
 (defmacro def-monitor-callback (name (monitor event) &body body)
   `(%glfw:define-glfw-callback ,name
@@ -244,6 +245,9 @@ SHARED: The window whose context to share resources with."
 
 (defun set-window-aspect-ratio (width height &optional (window *window*))
   (%glfw:set-window-aspect-ratio window width height))
+
+(defun get-window-content-scale (&optional (window *window*))
+  (%glfw:get-window-content-scale window))
 
 (defun get-framebuffer-size (&optional (window *window*))
   (%glfw:get-framebuffer-size window))
