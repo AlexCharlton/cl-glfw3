@@ -14,7 +14,9 @@
    get-monitors
    get-primary-monitor
    get-monitor-position
+   get-monitor-work-area
    get-monitor-physical-size
+   get-monitor-content-scale
    get-monitor-name
    set-monitor-callback
    get-video-modes
@@ -40,6 +42,7 @@
    set-window-size
    set-window-size-limits
    set-window-aspect-ratio
+   get-window-content-scale
    get-framebuffer-size
    iconify-window
    restore-window
@@ -466,12 +469,26 @@ Returns the previous error callback."
 		     monitor monitor :pointer x :pointer y :void)
     (list (mem-ref x :int) (mem-ref y :int))))
 
+(defun get-monitor-work-area (monitor)
+  "Returned work area is (x y w h) in screen coordinates."
+  (with-foreign-objects ((x :int) (y :int) (w :int) (h :int))
+    (foreign-funcall "glfwGetMonitorWorkarea"
+                     monitor monitor :pointer x :pointer y :pointer w :pointer h :void)
+    (list (mem-ref x :int) (mem-ref y :int) (mem-ref w :int) (mem-ref h :int))))
+
 (defun get-monitor-physical-size (monitor)
   "Returned size is (w h) in mm."
   (with-foreign-objects ((w :int) (h :int))
     (foreign-funcall "glfwGetMonitorPhysicalSize"
 		     monitor monitor :pointer w :pointer h :void)
     (list (mem-ref w :int) (mem-ref h :int))))
+
+(defun get-monitor-content-scale (monitor)
+  "Returned scale is (x-scale y-scale)."
+  (with-foreign-objects ((x-scale :float) (y-scale :float))
+    (foreign-funcall  "glfwGetMonitorContentScale"
+                      monitor monitor :pointer x-scale :pointer y-scale :void)
+    (list (mem-ref x-scale :float) (mem-ref y-scale :float))))
 
 (defcfun ("glfwGetMonitorName" get-monitor-name) :string
   (monitor monitor))
@@ -568,6 +585,13 @@ Returns previously set callback."
 
 (defcfun ("glfwSetWindowAspectRatio" set-window-aspect-ratio) :void
   (window window) (width :int) (height :int))
+
+(defun get-window-content-scale (window)
+  "Returned scale is (x-scale y-scale)."
+  (with-foreign-objects ((x-scale :float) (y-scale :float))
+    (foreign-funcall  "glfwGetWindowContentScale"
+                      window window :pointer x-scale :pointer y-scale :void)
+    (list (mem-ref x-scale :float) (mem-ref y-scale :float))))
 
 (defun get-framebuffer-size (window)
   "Returns size (w h) of framebuffer in pixels."
