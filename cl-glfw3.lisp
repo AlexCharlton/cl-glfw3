@@ -447,7 +447,8 @@ SHARED: The window whose context to share resources with."
 ;;;; ## Context
 (defun make-context-current (window)
   (setf *window* window)
-  (%glfw:make-context-current window))
+  (%glfw:make-context-current window)
+  window)
 
 (defun get-current-context ()
   (%glfw:get-current-context))
