@@ -448,6 +448,8 @@ CFFI's defcallback that takes care of GLFW specifics."
 
 ;; vulkan handles
 (defctype vk-instance :pointer)
+;; VkSurfaceKHR is a non-dispatchable handle - type depends on the system
+;; see: https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VK_DEFINE_NON_DISPATCHABLE_HANDLE.html
 #.(if (= 8 (foreign-type-size :pointer))
       '(defctype vk-surface-khr :pointer)
       '(defctype vk-surface-khr :uint64))
