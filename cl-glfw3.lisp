@@ -193,8 +193,9 @@ SHARED: The window whose context to share resources with."
   (let ((window (%glfw:create-window width height title monitor shared)))
     (if (cffi:null-pointer-p window)
 	(error "Error creating window.")
-	(unless (eq client-api :no-api)
-          (make-context-current window)))))
+	(if (eq client-api :no-api)
+            (setf *window* window)
+            (make-context-current window)))))
 
 (defun destroy-window (&optional (window *window*))
   (when window (%glfw:destroy-window window))

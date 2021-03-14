@@ -814,7 +814,7 @@ Returns previously set callback."
   (queue-family :uint32))
 
 (defun create-window-surface (instance &optional (window *window*) (allocator (cffi:null-pointer)))
-  (cffi:with-foreign-object (surface-khr vk-surface-khr)
+  (cffi:with-foreign-object (surface-khr 'vk-surface-khr)
     (let ((result (foreign-funcall "glfwCreateWindowSurface"
                                    vk-instance instance
                                    window window
