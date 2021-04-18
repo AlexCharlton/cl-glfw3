@@ -193,7 +193,9 @@ SHARED: The window whose context to share resources with."
   (let ((window (%glfw:create-window width height title monitor shared)))
     (if (cffi:null-pointer-p window)
 	(error "Error creating window.")
-	(make-context-current window))))
+	(if (eq client-api :no-api)
+            (setf *window* window)
+            (make-context-current window)))))
 
 (defun destroy-window (&optional (window *window*))
   (when window (%glfw:destroy-window window))
@@ -460,4 +462,11 @@ SHARED: The window whose context to share resources with."
 (defun swap-buffers (&optional (window *window*))
   (%glfw:swap-buffers window))
 
-(import-export %glfw:swap-interval %glfw:extension-supported-p %glfw:get-proc-address)
+(import-export %glfw:swap-interval
+               %glfw:extension-supported-p
+               %glfw:get-proc-address
+               %glfw:vulkan-supported-p
+               %glfw:get-required-instance-extensions
+               %glfw:get-instance-proc-address
+               %glfw:physical-device-presentation-support-p
+               %glfw:create-window-surface)

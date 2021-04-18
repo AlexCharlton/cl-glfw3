@@ -88,7 +88,12 @@
    swap-buffers
    swap-interval
    extension-supported-p
-   get-proc-address))
+   get-proc-address
+   vulkan-supported-p
+   get-required-instance-extensions
+   get-instance-proc-address
+   physical-device-presentation-support-p
+   create-window-surface))
 
 ;; internal stuff
 (export
@@ -390,6 +395,7 @@ CFFI's defcallback that takes care of GLFW specifics."
   (:opengl-profile #X00022008))
 
 (defcenum (opengl-api)
+  (:no-api 0)
   (:opengl-api #X00030001)
   (:opengl-es-api #X00030002))
 
@@ -417,6 +423,12 @@ CFFI's defcallback that takes care of GLFW specifics."
   (:hidden #X00034002)
   (:disabled #X00034003))
 
+(defcenum (vk-result :int)
+  (:error-native-window-in-use-khr -1000000001) ;; returned by glfwCreateWindowSurface if the window has not been created with GLFW_NO_API
+  (:error-extension-not-present -7) ;; returned by glfwCreateWindowSurface if the required extensions have not been enabled on the VkInstance
+  (:error-initialization-failed -3) ;; returned by glfwCreateWindowSurface if Vulkan is not supported on the system
+  (:success #x0)) ;; returned by glfwCreateWindowSurface if the VkSurfaceKHR has been created successfully
+
 (defcstruct video-mode
   (width :int)
   (height :int)
@@ -433,6 +445,16 @@ CFFI's defcallback that takes care of GLFW specifics."
 
 (defctype window :pointer)
 (defctype monitor :pointer)
+
+;; vulkan handles
+(defctype vk-instance :pointer)
+;; VkSurfaceKHR is a non-dispatchable handle - type depends on the system
+;; see: https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VK_DEFINE_NON_DISPATCHABLE_HANDLE.html
+#.(if (= 8 (foreign-type-size :pointer))
+      '(defctype vk-surface-khr :pointer)
+      '(defctype vk-surface-khr :uint64))
+(defctype vk-physical-device :pointer)
+(defctype vk-allocation-callbacks :pointer)
 
 ;;;; ## GLFW Functions
 (defcfun ("glfwInit" init) :boolean)
@@ -772,3 +794,35 @@ Returns previously set callback."
 
 (defcfun ("glfwGetProcAddress" get-proc-address) :pointer
   (proc-name :string))
+
+(defcfun ("glfwVulkanSupported" vulkan-supported-p) :boolean)
+
+(defun get-required-instance-extensions ()
+  "Returns a all names of required Vulkan extensions in a list."
+  (with-foreign-object (count :int)
+    (c-array->list (foreign-funcall "glfwGetRequiredInstanceExtensions"
+				    :pointer count
+                                    :pointer)
+        (mem-ref count :int)
+        :string)))
+
+(defcfun ("glfwGetInstanceProcAddress" get-instance-proc-address) :pointer
+  (instance vk-instance)
+  (proc-name :string))
+
+(defcfun ("glfwGetPhysicalDevicePresentationSupport" physical-device-presentation-support-p) :boolean
+  (instance vk-instance)
+  (device vk-physical-device)
+  (queue-family :uint32))
+
+(defun create-window-surface (instance &optional (window *window*) (allocator (cffi:null-pointer)))
+  (cffi:with-foreign-object (surface-khr 'vk-surface-khr)
+    (let ((result (foreign-funcall "glfwCreateWindowSurface"
+                                   vk-instance instance
+                                   window window
+                                   vk-allocation-callbacks allocator
+                                   vk-surface-khr surface-khr
+                                   vk-result)))
+      (if (eq result :success)
+          (cffi:mem-aref surface-khr 'vk-surface-khr)
+          (error "Error creating VkSurfaceKHR: ~a" result)))))
