@@ -82,7 +82,8 @@
    make-context-current
    get-current-context
    with-context
-   swap-buffers))
+   swap-buffers
+   create-window-surface))
 
 (multiple-value-bind (major minor rev) (%glfw:get-version)
   (when (/= major 3)
@@ -462,11 +463,13 @@ SHARED: The window whose context to share resources with."
 (defun swap-buffers (&optional (window *window*))
   (%glfw:swap-buffers window))
 
+(defun create-window-surface (instance &optional (window *window*) (allocator (cffi:null-pointer)))
+  (%glfw:create-window-surface instance window allocator))
+
 (import-export %glfw:swap-interval
                %glfw:extension-supported-p
                %glfw:get-proc-address
                %glfw:vulkan-supported-p
                %glfw:get-required-instance-extensions
                %glfw:get-instance-proc-address
-               %glfw:physical-device-presentation-support-p
-               %glfw:create-window-surface)
+               %glfw:physical-device-presentation-support-p)
