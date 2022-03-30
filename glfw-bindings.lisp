@@ -14,7 +14,7 @@
    get-monitors
    get-primary-monitor
    get-monitor-position
-   get-monitor-work-area
+   get-monitor-work-area ;get-monitor-workarea?
    get-monitor-physical-size
    get-monitor-content-scale
    get-monitor-name
@@ -96,6 +96,7 @@
    create-window-surface
 
    ;;added
+   ;;window
    set-window-icon
    get-window-frame-size
    maximize-window
@@ -104,6 +105,9 @@
    set-window-maximize-callback
    set-window-content-scale-callback
    wait-events-timeout
+   ;;monitor
+   set-monitor-user-pointer
+   get-monitor-user-pointer
    ))
 
 ;; internal stuff
@@ -552,6 +556,13 @@ Returns the previous error callback."
     (list (mem-ref x-scale :float) (mem-ref y-scale :float))))
 
 (defcfun ("glfwGetMonitorName" get-monitor-name) :string
+  (monitor monitor))
+
+;;added
+(defcfun ("glfwSetMonitorUserPointer" set-monitor-user-pointer) :void
+  (monitor monitor) (pointer :pointer))
+;;added
+(defcfun ("glfwGetMonitorUserPointer" get-monitor-user-pointer) :pointer
   (monitor monitor))
 
 (defcfun ("glfwSetMonitorCallback" set-monitor-callback) :pointer
