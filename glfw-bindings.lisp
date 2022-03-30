@@ -93,7 +93,18 @@
    get-required-instance-extensions
    get-instance-proc-address
    physical-device-presentation-support-p
-   create-window-surface))
+   create-window-surface
+
+   ;;added
+   set-window-icon
+   get-window-frame-size
+   maximize-window
+   focus-window
+   request-window-attention
+   set-window-maximize-callback
+   set-window-content-scale-callback
+   wait-events-timeout
+   ))
 
 ;; internal stuff
 (export
@@ -407,9 +418,9 @@ CFFI's defcallback that takes care of GLFW specifics."
   (:context-release-behavior #x00022009)
   (:context-no-error #x0002200a)
   ;;not-tested
-  #+darwin :cocoa-retina-framebuffer
-  #+darwin :cocoa-frame-name
-  #+darwin :cocoa-graphics-switching
+  #+darwin (:cocoa-retina-framebuffer #x00023001)
+  #+darwin (:cocoa-frame-name #x00023002)
+  #+darwin (:cocoa-graphics-switching #x00023003)
   #+linux (:x11-class-name #x00024001)
   #+linux (:x11-instance-name #x00024002)
   )
@@ -462,6 +473,12 @@ CFFI's defcallback that takes care of GLFW specifics."
   (green :pointer)
   (blue :pointer)
   (size :unsigned-int))
+
+;;added
+(defcstruct image
+  (width :int)
+  (height :int)
+  (pixels :string))
 
 (defctype window :pointer)
 (defctype monitor :pointer)
@@ -571,6 +588,9 @@ Returns previously set callback."
 (defcfun ("glfwWindowHint" window-hint) :void
   (target window-hint) (hint :int))
 
+(defcfun ("glfwWindowHintString" window-hint-string) :void
+  (target window-hint) (hint (:pointer :char)))
+
 (defcfun ("glfwCreateWindow" create-window) (float-traps-masked window)
   "Returns a window pointer that shares resources with the window SHARED or NULL."
   (width :int) (height :int) (title :string) (monitor monitor) (shared window))
@@ -586,6 +606,10 @@ Returns previously set callback."
 
 (defcfun ("glfwSetWindowTitle" set-window-title) :void
   (window window) (title :string))
+
+;;added pointer?
+(defcfun ("glfwSetWindowIcon" set-window-icon) :void
+  (window window) (image-count :int) (images (:pointer (:struct image))))
 
 (defcfun ("glfwSetWindowMonitor" set-window-monitor) :void
     (window window) (monitor monitor)
@@ -642,16 +666,37 @@ Returns previously set callback."
 		     window window :pointer w :pointer h :void)
     (list (mem-ref w :int) (mem-ref h :int))))
 
+;;added
+(defun get-window-framesize (window)
+  "returns size (left top right bottom) of frame size."
+  (with-foreign-objects ((left :int) (top :int) (right :int) (bottom :int))
+    (foreign-funcall "glfwGetWindowFrameSize"
+                     window window
+                     :pointer left :pointer top :pointer right :pointer bottom :void)
+    (list (mem-ref left :int) (mem-ref top :int) (mem-ref right :int) (mem-ref bottom :int))))
+
 (defcfun ("glfwIconifyWindow" iconify-window) :void
   (window window))
 
 (defcfun ("glfwRestoreWindow" restore-window) :void
   (window window))
 
+;;added
+(defcfun ("glfwMaximizeWindow" maximize-window) :void
+  (window window))
+
 (defcfun ("glfwShowWindow" show-window) :void
   (window window))
 
 (defcfun ("glfwHideWindow" hide-window) :void
+  (window window))
+
+;;added
+(defcfun ("glfwFocusWindow" focus-window) :void
+  (window window))
+
+;;added
+(defcfun ("glfwRequestWindowAttention" request-window-attention) :void
   (window window))
 
 (defcfun ("glfwGetWindowMonitor" get-window-monitor) monitor
@@ -696,6 +741,17 @@ Returns previously set callback."
 Returns previously set callback."
   (window window) (iconify-fun :pointer))
 
+;;added
+(defcfun ("glfwsetWindowMaximizeCallback" set-window-maximize-callback) :pointer
+  "MAXIMIZE-FUN is a callback of type 'void (* GLFWwindowmaximizefun)(GLFWwindow*,int)'.
+  Returns previously set callback."
+  (window window) (maximize-fun :pointer))
+;;added
+(defcfun ("glfwSetWindowContentScaleCallback" set-window-content-scale-callback) :pointer
+  "CONTENTS-SCALE-FUN is a callback of type 'void (* GLFWwindowContentsScalefun)(GLFWwindow*,float,float)'.
+  Returns previously set callback."
+  (window window) (contents-scale-fun :pointer))
+
 (defcfun ("glfwSetFramebufferSizeCallback" set-framebuffer-size-callback) :pointer
   "FRAMEBUFFER-SIZE-FUN is a callback of type 'void (* GLFWframebuffersizefun)(GLFWwindow*,int,int)'.
 Returns previously set callback."
@@ -705,6 +761,10 @@ Returns previously set callback."
 (defcfun ("glfwPollEvents" poll-events) (float-traps-masked :void))
 
 (defcfun ("glfwWaitEvents" wait-events) (float-traps-masked :void))
+
+;;added trapps-masked?
+(defcfun ("glfwWaitEventsTimeout" wait-events-timeout) :void
+  (timeout :double))
 
 (defcfun ("glfwPostEmptyEvent" post-empty-event) :void)
 
