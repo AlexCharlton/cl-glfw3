@@ -580,7 +580,7 @@ Returns previously set callback."
            '(:struct gamma-ramp)))
 
 (defcfun ("glfwSetGammaRamp" set-gamma-ramp) :void
-  (monitor monitor) (ramp gamma-ramp))
+  (monitor monitor) (ramp (:pointer (:struct gamma-ramp))))
 
 (defcfun ("glfwDefaultWindowHints" default-window-hints) :void
   "Reset all window hints to defaults.")
