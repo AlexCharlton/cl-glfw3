@@ -113,10 +113,10 @@
 (define-foreign-library (glfw)
      (:darwin (:or
                ; homebrew naming
-               "libglfw3.1.dylib" "libglfw3.dylib"
+               "libglfw3.3.dylib" "libglfw3.2.dylib" "libglfw3.1.dylib" "libglfw3.dylib"
                ; cmake build naming
-               "libglfw.3.1.dylib" "libglfw.3.dylib"))
-     (:unix (:or "libglfw.so.3.1" "libglfw.so.3"))
+               "libglfw.3.3.dylib" "libglfw.3.2.dylib" "libglfw.3.1.dylib" "libglfw.3.dylib"))
+     (:unix (:or "libglfw.so.3.3" "libglfw.wo.3.2" "libglfw.so.3.1" "libglfw.so.3" "libglfw.so"))
      (:windows "glfw3.dll")
      (t (:or (:default "libglfw3") (:default "libglfw"))))
 
