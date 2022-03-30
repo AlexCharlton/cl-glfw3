@@ -392,7 +392,27 @@ CFFI's defcallback that takes care of GLFW specifics."
   (:context-robustness #x00022005)
   (:opengl-forward-compat #x00022006)
   (:opengl-debug-context #x00022007)
-  (:opengl-profile #X00022008))
+  (:opengl-profile #X00022008)
+  ;;added
+  ;;window-hint
+  (:doublebuffer #x00021010)
+  (:context-creation-api #x0002200b)
+  (:auto-iconify #x00020006)
+  (:maximized #x00020008)
+  (:center-cursor #x00020009)
+  (:transparent-framebuffer #x0002000a)
+  (:focus-on-show #x0002000c)
+  (:scale-to-monitor #x0002200c)
+  ;;context
+  (:context-release-behavior #x00022009)
+  (:context-no-error #x0002200a)
+  ;;not-tested
+  #+darwin :cocoa-retina-framebuffer
+  #+darwin :cocoa-frame-name
+  #+darwin :cocoa-graphics-switching
+  #+linux (:x11-class-name #x00024001)
+  #+linux (:x11-instance-name #x00024002)
+  )
 
 (defcenum (opengl-api)
   (:no-api 0)
