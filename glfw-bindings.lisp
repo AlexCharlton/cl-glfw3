@@ -108,7 +108,25 @@
    ;;monitor
    set-monitor-user-pointer
    get-monitor-user-pointer
-   ))
+   ;;input
+   get-key-scancode
+   get-key-name
+   raw-mouse-motion-supported-p
+   create-cursor
+   create-standard-cursor
+   set-cursor
+   get-joystick-hat
+   set-joystick-user-pointer
+   get-joystick-user-pointer
+   joystick-gamepad
+   set-joystick-callback
+   update-gamepad-mappings
+   get-gamepad-name
+   get-gamepad-state
+   get-timer-value
+   get-timer-frequency
+   set-drop-callback
+ ))
 
 ;; internal stuff
 (export
@@ -330,11 +348,26 @@ CFFI's defcallback that takes care of GLFW specifics."
   (:right-super 347)
   (:menu 348))
 
+;;added caps-lock#x10 num-lock#x20
 (defbitfield (mod-keys)
   :shift
   :control
   :alt
-  :super)
+  :super
+  :caps-lock
+  :num-lock)
+
+;;added
+(defbitfield (hat)
+  (:centered #x0000)
+  (:up #x0001)
+  (:right #x0002)
+  (:down #x0004)
+  (:left #x0008)
+  (:right-up #x0003)
+  (:right-down #x0006)
+  (:left-up #x0009)
+  (:left-down #x000c))
 
 (defcenum (mouse)
   (:1 0)
@@ -367,6 +400,15 @@ CFFI's defcallback that takes care of GLFW specifics."
   :15
   :16
   (:last 15))
+
+;;added
+(defcenum (cursor-shape)
+  (:arrow #x00036001)
+  (:ibeam #x00036002)
+  (:crosshair #x00036003)
+  (:hand #x00036004)
+  (:hresize #x00036005)
+  (:vresize #x00036006))
 
 (defcenum (errors)
   (:not-initialized #x00010001)
@@ -453,12 +495,46 @@ CFFI's defcallback that takes care of GLFW specifics."
 (defcenum (input-mode)
   (:cursor #X00033001)
   (:sticky-keys #X00033002)
-  (:sticky-mouse-buttons #x00033003))
+  (:sticky-mouse-buttons #x00033003)
+  ;;added
+  (:lock-key-mods #x00033004)
+  (:raw-mouse-motion #x00033005))
 
 (defcenum (cursor-mode)
   (:normal #X00034001)
   (:hidden #X00034002)
   (:disabled #X00034003))
+
+;;added
+(defcenum (gamepad-buttons)
+  (:a 0)
+  (:b 1)
+  (:x 2)
+  (:y 3)
+  (:left-bumper 4)
+  (:right-bumper 5)
+  (:back 6)
+  (:start 7)
+  (:guide 8)
+  (:left-thumb 9)
+  (:right-thumb 10)
+  (:dpad-up 11)
+  (:dpad-right 12)
+  (:dpad-down 13)
+  (:dpad-left)
+  (:last 14)
+  (:cross 0)
+  (:circle 1)
+  (:square 2)
+  (:triangle 3))
+;;added
+(defcenum (gamepad-axis)
+  (:left-x 0)
+  (:left-y 1)
+  (:right-x 2)
+  (:right-y 3)
+  (:left-trigger 4)
+  (:right-trigger 5))
 
 (defcenum (vk-result :int)
   (:error-native-window-in-use-khr -1000000001) ;; returned by glfwCreateWindowSurface if the window has not been created with GLFW_NO_API
@@ -485,9 +561,15 @@ CFFI's defcallback that takes care of GLFW specifics."
   (width :int)
   (height :int)
   (pixels :string))
+;;added
+(defcstruct gamepad-state
+  (buttons (:pointer :char))
+  (axes (:pointer :float)))
 
 (defctype window :pointer)
 (defctype monitor :pointer)
+;;added
+(defctype cursor :pointer)
 
 ;; vulkan handles
 (defctype vk-instance :pointer)
@@ -787,8 +869,16 @@ Returns previously set callback."
 (defcfun ("glfwSetInputMode" set-input-mode) :void
   (window window) (mode input-mode) (value :int))
 
+;;added
+(defcfun ("glfwGetKeyScancode" get-key-scancode) :int
+  (key key))
+
 (defcfun ("glfwGetKey" get-key) key-action
   (window window) (key key))
+
+;;added
+(defcfun ("glfwGetKeyName" get-key-name) :string
+  (key key) (scancode :int))
 
 (defcfun ("glfwGetMouseButton" get-mouse-button) key-action
   (window window) (button mouse))
@@ -802,6 +892,19 @@ Returns previously set callback."
 
 (defcfun ("glfwSetCursorPos" set-cursor-position) :void
   (window window) (x :double) (y :double))
+
+;;added
+(defcfun ("glfwCreateCursor" create-cursor) (float-traps-masked cursor)
+  (image (:pointer (:struct image))) (xhot :int) (yhot :int))
+;;added
+(defcfun ("glfwCreateStandardCursor" create-standard-cursor) (:pointer cursor)
+  (shape cursor-shape))
+;;added
+(defcfun ("glfwDestroyCursor" destroy-cursor) :void
+  (cursor (:pointer cursor)))
+;;added
+(defcfun ("glfwSetCursor" set-cursor) :void
+  (window window) (cursor cursor))
 
 (defcfun ("glfwSetKeyCallback" set-key-callback) :pointer
   "KEY-FUN is a callback of type 'void (* GLFWkeyfun)(GLFWwindow*,int,int,int,int)'.
@@ -836,6 +939,9 @@ Returns previously set callback."
 (defcfun ("glfwJoystickPresent" joystick-present-p) :boolean
   (joystick :int))
 
+;;added
+(defcfun ("glfwRawMouseMotionSupported" raw-mouse-motion-supported-p) :int)
+
 (defun get-joystick-axes (joystick)
   "Returns list of values for each axes of the joystick."
   (with-foreign-object (count :int)
@@ -854,8 +960,36 @@ Returns previously set callback."
         (mem-ref count :int)
         'key-action)))
 
+;;added
+(defcfun ("glfwGetJoystickHats" get-joystick-hats) (:pointer hat)
+  (jid joystick) (count (:pointer :int)))
+
 (defcfun ("glfwGetJoystickName" get-joystick-name) :string
   (joystick :int))
+
+;;added
+(defcfun ("glfwSetJoystickUserPointer" set-joystick-user-pointer) :void
+  (joystick joystick) (pointer :pointer))
+;;added
+(defcfun ("glfwGetJoystickUserPointer" get-joystick-user-pointer) :pointer
+  (joystick joystick))
+;;added
+(defcfun ("glfwJoystickGamepad" joystick-gamepad) :int
+  (joystick joystick))
+;;added
+(defcfun ("glfwSetJoystickCallback" set-joystick-callback) :pointer
+  "JOYSTICK-FUN is a callback of type 'void (* GLFWjoystickfun)(int joystick,int event)'.
+Returns previously set callback."
+  (JOYSTICK-FUN :pointer))
+;;added
+(defcfun ("glfwUpdateGamepadMappings" update-gamepad-mappings) :int
+  (string :string))
+;;added
+(defcfun ("glfwGetGamepadName" get-gamepad-name) :string
+  (joystick joystick))
+;;added
+(defcfun ("glfwGetGamepadState" get-gamepad-state) :int
+  (joystick joystick) (gamepad-state (:pointer (:struct gamepad-state))))
 
 ;;;; ### Clipboard
 (defcfun ("glfwSetClipboardString" set-clipboard-string) :void
@@ -869,6 +1003,18 @@ Returns previously set callback."
 
 (defcfun ("glfwSetTime" set-time) :void
   (time :double))
+
+;;added
+(defcfun ("glfwGetTimerValue" get-timer-value) :uint64)
+;;added
+(defcfun ("glfwGetTimerFrequency" get-timer-frequency) :uint64)
+
+;;;; ### files
+;;added
+(defcfun ("glfwSetDropCallback" set-drop-callback) :pointer
+  "DROP-FUN is a callback of type 'void (* GLFWdropfun)(GLFWwindow*,int path_count,string)'.
+Returns previously set callback."
+  (DROP-FUN :pointer))
 
 ;;;; ### Context
 (defcfun ("glfwMakeContextCurrent" make-context-current) :void
