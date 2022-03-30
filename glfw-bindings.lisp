@@ -414,6 +414,8 @@ CFFI's defcallback that takes care of GLFW specifics."
   (:transparent-framebuffer #x0002000a)
   (:focus-on-show #x0002000c)
   (:scale-to-monitor #x0002200c)
+  (:hovered #x0002000b)
+  (:floating #x00020007)
   ;;context
   (:context-release-behavior #x00022009)
   (:context-no-error #x0002200a)
