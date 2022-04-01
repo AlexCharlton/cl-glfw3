@@ -220,11 +220,81 @@ CFFI's defcallback that takes care of GLFW specifics."
 (alexandria:define-constant +dont-care+ -1)
 
 ;;;; ## GLFW Types
+
 (defcenum (key-action)
   :release
   :press
   :repeat)
 
+;;; # Gamepad axes
+;;added
+(defcenum (gamepad-axes)
+  (:left-x 0)
+  (:left-y 1)
+  (:right-x 2)
+  (:right-y 3)
+  (:left-trigger 4)
+  (:right-trigger 5)
+  (:last 5))
+
+;;added
+;;; # Gamepad buttons
+(defcenum (gamepad-buttons)
+  (:a 0)
+  (:b 1)
+  (:x 2)
+  (:y 3)
+  (:left-bumper 4)
+  (:right-bumper 5)
+  (:back 6)
+  (:start 7)
+  (:guide 8)
+  (:left-thumb 9)
+  (:right-thumb 10)
+  (:dpad-up 11)
+  (:dpad-right 12)
+  (:dpad-down 13)
+  (:dpad-left)
+  (:last 14)
+  (:cross 0)
+  (:circle 1)
+  (:square 2)
+  (:triangle 3))
+
+;;added
+;;; # joystick hat states
+(defbitfield (hat)
+  (:centered #x0000)
+  (:up #x0001)
+  (:right #x0002)
+  (:down #x0004)
+  (:left #x0008)
+  (:right-up #x0003)
+  (:right-down #x0006)
+  (:left-up #x0009)
+  (:left-down #x000c))
+
+;;; # Joysticks
+(defcenum (joystick)
+  :1
+  :2
+  :3
+  :4
+  :5
+  :6
+  :7
+  :8
+  :9
+  :10
+  :11
+  :12
+  :13
+  :14
+  :15
+  :16
+  (:last 15))
+
+;;; # KeyBoard Keys
 (defcenum (key)
   (:unknown -1)
   (:space 32)
@@ -349,6 +419,7 @@ CFFI's defcallback that takes care of GLFW specifics."
   (:menu 348))
 
 ;;added caps-lock#x10 num-lock#x20
+;;; # Modifier key flags
 (defbitfield (mod-keys)
   :shift
   :control
@@ -357,18 +428,7 @@ CFFI's defcallback that takes care of GLFW specifics."
   :caps-lock
   :num-lock)
 
-;;added
-(defbitfield (hat)
-  (:centered #x0000)
-  (:up #x0001)
-  (:right #x0002)
-  (:down #x0004)
-  (:left #x0008)
-  (:right-up #x0003)
-  (:right-down #x0006)
-  (:left-up #x0009)
-  (:left-down #x000c))
-
+;;; # Mouse buttons
 (defcenum (mouse)
   (:1 0)
   (:2 1)
@@ -382,26 +442,8 @@ CFFI's defcallback that takes care of GLFW specifics."
   (:left 0)
   (:right 1))
 
-(defcenum (joystick)
-  :1
-  :2
-  :3
-  :4
-  :5
-  :6
-  :7
-  :8
-  :9
-  :10
-  :11
-  :12
-  :13
-  :14
-  :15
-  :16
-  (:last 15))
-
 ;;added
+;;Standard cursor shapes
 (defcenum (cursor-shape)
   (:arrow #x00036001)
   (:ibeam #x00036002)
@@ -410,6 +452,7 @@ CFFI's defcallback that takes care of GLFW specifics."
   (:hresize #x00036005)
   (:vresize #x00036006))
 
+;;; # Error codes
 (defcenum (errors)
   (:not-initialized #x00010001)
   (:no-current-context #x00010002)
@@ -421,6 +464,7 @@ CFFI's defcallback that takes care of GLFW specifics."
   (:platform-error #X00010008)
   (:format-unavailable #x00010009))
 
+;;; # window-hint
 (defcenum (window-hint)
   (:focused #X00020001)
   (:iconified #X00020002)
@@ -504,37 +548,6 @@ CFFI's defcallback that takes care of GLFW specifics."
   (:normal #X00034001)
   (:hidden #X00034002)
   (:disabled #X00034003))
-
-;;added
-(defcenum (gamepad-buttons)
-  (:a 0)
-  (:b 1)
-  (:x 2)
-  (:y 3)
-  (:left-bumper 4)
-  (:right-bumper 5)
-  (:back 6)
-  (:start 7)
-  (:guide 8)
-  (:left-thumb 9)
-  (:right-thumb 10)
-  (:dpad-up 11)
-  (:dpad-right 12)
-  (:dpad-down 13)
-  (:dpad-left)
-  (:last 14)
-  (:cross 0)
-  (:circle 1)
-  (:square 2)
-  (:triangle 3))
-;;added
-(defcenum (gamepad-axis)
-  (:left-x 0)
-  (:left-y 1)
-  (:right-x 2)
-  (:right-y 3)
-  (:left-trigger 4)
-  (:right-trigger 5))
 
 (defcenum (vk-result :int)
   (:error-native-window-in-use-khr -1000000001) ;; returned by glfwCreateWindowSurface if the window has not been created with GLFW_NO_API
