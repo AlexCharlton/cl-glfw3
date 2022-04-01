@@ -598,7 +598,7 @@ not recommended
 (defcstruct image
   (width :int)
   (height :int)
-  (pixels :string))
+  (pixels (:pointer :uchar)))
 
 ;;added
 (defcstruct gamepad-state
@@ -1027,10 +1027,10 @@ Returns previously set callback."
 
 ;;added
 (defcfun ("glfwGetJoystickHats" get-joystick-hats) (:pointer hat)
-  (jid joystick) (count (:pointer :int)))
+  (jid :int) (count (:pointer :int)))
 
 (defcfun ("glfwGetJoystickName" get-joystick-name) :string
-  (joystick :int))
+  (joystick :int));jid
 
 ;;added
 (defcfun ("glfwGetJoystickGUID" get-joystick-guid) :string
@@ -1038,15 +1038,15 @@ Returns previously set callback."
 
 ;;added
 (defcfun ("glfwSetJoystickUserPointer" set-joystick-user-pointer) :void
-  (joystick joystick) (pointer :pointer))
+  (joystick :int) (pointer :pointer))
 
 ;;added
 (defcfun ("glfwGetJoystickUserPointer" get-joystick-user-pointer) :pointer
-  (joystick joystick))
+  (joystick :int))
 
 ;;added
 (defcfun ("glfwJoystickIsGamepad" joystick-is-gamepad) :int
-  (joystick joystick))
+  (joystick :int))
 
 ;;added
 (defcfun ("glfwSetJoystickCallback" set-joystick-callback) :pointer
@@ -1060,11 +1060,11 @@ Returns previously set callback."
 
 ;;added
 (defcfun ("glfwGetGamepadName" get-gamepad-name) :string
-  (joystick joystick))
+  (joystick :int))
 
 ;;added
 (defcfun ("glfwGetGamepadState" get-gamepad-state) :int
-  (joystick joystick) (gamepad-state (:pointer (:struct gamepad-state))))
+  (joystick :int) (gamepad-state (:pointer (:struct gamepad-state))))
 
 ;;;; ### Clipboard
 (defcfun ("glfwSetClipboardString" set-clipboard-string) :void
