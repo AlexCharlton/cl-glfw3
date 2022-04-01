@@ -688,7 +688,6 @@ Returns the previous error callback."
 (defcfun ("glfwGetMonitorUserPointer" get-monitor-user-pointer) :pointer
   (monitor monitor))
 
-monitor-event
 (defcfun ("glfwSetMonitorCallback" set-monitor-callback) :pointer
   "MONITOR-FUN is a callback of type 'void (* GLFWmonitorfun)(GLFWmonitor* monitor,int event)'.
   event is one of the monitor-event
