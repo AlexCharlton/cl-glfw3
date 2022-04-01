@@ -558,7 +558,7 @@ not recommended
   (:connected #X00040001)
   (:disconnected #X00040002))
 
-;; # for get-input-mode function etc
+;; # for get-input-mode and set-input-mode
 (defcenum (input-mode)
   (:cursor #X00033001)
   (:sticky-keys #X00033002)
@@ -599,6 +599,7 @@ not recommended
   (width :int)
   (height :int)
   (pixels :string))
+
 ;;added
 (defcstruct gamepad-state
   (buttons (:pointer :char))
@@ -687,8 +688,10 @@ Returns the previous error callback."
 (defcfun ("glfwGetMonitorUserPointer" get-monitor-user-pointer) :pointer
   (monitor monitor))
 
+monitor-event
 (defcfun ("glfwSetMonitorCallback" set-monitor-callback) :pointer
-  "MONITOR-FUN is a callback of type 'void (* GLFWmonitorfun)(GLFWmonitor*,int)'.
+  "MONITOR-FUN is a callback of type 'void (* GLFWmonitorfun)(GLFWmonitor* monitor,int event)'.
+  event is one of the monitor-event
 Returns previously set callback."
   (monitor-fun :pointer))
 
@@ -913,6 +916,8 @@ Returns previously set callback."
   (window window) (mode input-mode))
 
 (defcfun ("glfwSetInputMode" set-input-mode) :void
+  "if mode is :cursor value is cursor-mode
+  else value is true or false"
   (window window) (mode input-mode) (value :int))
 
 ;;added
