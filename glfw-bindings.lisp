@@ -96,6 +96,7 @@
    create-window-surface
 
    ;;added
+   get-version-string
    ;;window
    set-window-icon
    get-window-frame-size
@@ -118,7 +119,7 @@
    get-joystick-hat
    set-joystick-user-pointer
    get-joystick-user-pointer
-   joystick-gamepad
+   joystick-is-gamepad
    set-joystick-callback
    update-gamepad-mappings
    get-gamepad-name
@@ -126,6 +127,8 @@
    get-timer-value
    get-timer-frequency
    set-drop-callback
+   get-joystick-guid
+   set-char-mods-callback
  ))
 
 ;; internal stuff
@@ -517,25 +520,45 @@ CFFI's defcallback that takes care of GLFW specifics."
   #+linux (:x11-instance-name #x00024002)
   )
 
+;; # for client-api hit
 (defcenum (opengl-api)
   (:no-api 0)
   (:opengl-api #X00030001)
   (:opengl-es-api #X00030002))
 
+#|
+;; # for context-creation-api
+not recommended
+(defcenum (context-robustness)
+          (:no-robustness 0)
+          (:no-reset-notification #x00031001)
+          (:lose-context-on-reset #x00031002))
+|#
+
+;; # for context-robustness hint
 (defcenum (robustness)
   (:no-robustness 0)
   (:no-reset-notification #x00031001)
   (:lose-context-on-reset #x00031002))
 
+;; # for context-release-behavior hint
+(defcenum (release-behavior)
+  (:any-release-behavior 0)
+  (:release-behavior-flush #x00035001)
+  (:release-behavior-none #x00035002))
+
+;; # for opengl-profile hint
 (defcenum (opengl-profile)
   (:opengl-any-profile 0)
   (:opengl-core-profile #x00032001)
   (:opengl-compat-profile #x00032002))
 
+;; # for monitor callbacks
 (defcenum (monitor-event)
   (:connected #X00040001)
   (:disconnected #X00040002))
 
+;; # for get-input-mode function etc
 (defcenum (input-mode)
   (:cursor #X00033001)
   (:sticky-keys #X00033002)
@@ -544,11 +567,13 @@ CFFI's defcallback that takes care of GLFW specifics."
   (:lock-key-mods #x00033004)
   (:raw-mouse-motion #x00033005))
 
+;; # for set-input-mode function
 (defcenum (cursor-mode)
   (:normal #X00034001)
   (:hidden #X00034002)
   (:disabled #X00034003))
 
+;; # for create-window-surface
 (defcenum (vk-result :int)
   (:error-native-window-in-use-khr -1000000001) ;; returned by glfwCreateWindowSurface if the window has not been created with GLFW_NO_API
   (:error-extension-not-present -7) ;; returned by glfwCreateWindowSurface if the required extensions have not been enabled on the VkInstance
@@ -604,6 +629,7 @@ CFFI's defcallback that takes care of GLFW specifics."
     (foreign-funcall "glfwGetVersion" :pointer major :pointer minor :pointer rev)
     (values (mem-ref major :int) (mem-ref minor :int) (mem-ref rev :int))))
 
+;;added
 (defcfun ("glfwGetVersionString" get-version-string) :string)
 
 (defcfun ("glfwSetErrorCallback" set-error-callback) :pointer
@@ -612,6 +638,7 @@ Returns the previous error callback."
   (error-fun :pointer))
 
 ;;;; ### Window and monitor functions
+;;;; ### Monitor function
 (defun get-monitors ()
   "Returns list of pointers to opaque monitor objects."
   (with-foreign-object (count :int)
@@ -690,6 +717,7 @@ Returns previously set callback."
 (defcfun ("glfwSetGammaRamp" set-gamma-ramp) :void
   (monitor monitor) (ramp (:pointer (:struct gamma-ramp))))
 
+;;;; ### Monitor function
 (defcfun ("glfwDefaultWindowHints" default-window-hints) :void
   "Reset all window hints to defaults.")
 
@@ -715,14 +743,9 @@ Returns previously set callback."
 (defcfun ("glfwSetWindowTitle" set-window-title) :void
   (window window) (title :string))
 
-;;added pointer?
+;;added
 (defcfun ("glfwSetWindowIcon" set-window-icon) :void
   (window window) (image-count :int) (images (:pointer (:struct image))))
-
-(defcfun ("glfwSetWindowMonitor" set-window-monitor) :void
-    (window window) (monitor monitor)
-    (x-position :int) (y-position :int)
-    (width :int) (height :int) (refresh-rate :int))
 
 (defun get-window-position (window)
   "Returns position of upper left corner of window (x y) in screen coordinates."
@@ -733,16 +756,6 @@ Returns previously set callback."
 
 (defcfun ("glfwSetWindowPos" set-window-position) :void
   (window window) (x :int) (y :int))
-
-(defun get-window-opacity (window)
-  "Returns opacity of window."
-  (with-foreign-objects ((x :float))
-    (foreign-funcall "glfwGetWindowOpacity"
-                     window window :pointer x :void)
-    (mem-ref x :float)))
-
-(defcfun ("glfwSetWindowOpacity" set-window-opacity) :void
-  (window window) (x :float))
 
 (defun get-window-size (window)
   "Returns size (w h) in screen coordinates."
@@ -760,6 +773,15 @@ Returns previously set callback."
 (defcfun ("glfwSetWindowAspectRatio" set-window-aspect-ratio) :void
   (window window) (width :int) (height :int))
 
+;;added
+(defun get-window-frame-size (window)
+  "returns size (left top right bottom) of frame size."
+  (with-foreign-objects ((left :int) (top :int) (right :int) (bottom :int))
+    (foreign-funcall "glfwGetWindowFrameSize"
+                     window window
+                     :pointer left :pointer top :pointer right :pointer bottom :void)
+    (list (mem-ref left :int) (mem-ref top :int) (mem-ref right :int) (mem-ref bottom :int))))
+
 (defun get-window-content-scale (window)
   "Returned scale is (x-scale y-scale)."
   (with-foreign-objects ((x-scale :float) (y-scale :float))
@@ -767,21 +789,15 @@ Returns previously set callback."
                       window window :pointer x-scale :pointer y-scale :void)
     (list (mem-ref x-scale :float) (mem-ref y-scale :float))))
 
-(defun get-framebuffer-size (window)
-  "Returns size (w h) of framebuffer in pixels."
-  (with-foreign-objects ((w :int) (h :int))
-    (foreign-funcall "glfwGetFramebufferSize"
-		     window window :pointer w :pointer h :void)
-    (list (mem-ref w :int) (mem-ref h :int))))
+(defun get-window-opacity (window)
+  "Returns opacity of window."
+  (with-foreign-objects ((x :float))
+    (foreign-funcall "glfwGetWindowOpacity"
+                     window window :pointer x :void)
+    (mem-ref x :float)))
 
-;;added
-(defun get-window-framesize (window)
-  "returns size (left top right bottom) of frame size."
-  (with-foreign-objects ((left :int) (top :int) (right :int) (bottom :int))
-    (foreign-funcall "glfwGetWindowFrameSize"
-                     window window
-                     :pointer left :pointer top :pointer right :pointer bottom :void)
-    (list (mem-ref left :int) (mem-ref top :int) (mem-ref right :int) (mem-ref bottom :int))))
+(defcfun ("glfwSetWindowOpacity" set-window-opacity) :void
+  (window window) (x :float))
 
 (defcfun ("glfwIconifyWindow" iconify-window) :void
   (window window))
@@ -809,6 +825,18 @@ Returns previously set callback."
 
 (defcfun ("glfwGetWindowMonitor" get-window-monitor) monitor
   (window window))
+
+(defcfun ("glfwSetWindowMonitor" set-window-monitor) :void
+    (window window) (monitor monitor)
+    (x-position :int) (y-position :int)
+    (width :int) (height :int) (refresh-rate :int))
+
+(defun get-framebuffer-size (window)
+  "Returns size (w h) of framebuffer in pixels."
+  (with-foreign-objects ((w :int) (h :int))
+    (foreign-funcall "glfwGetFramebufferSize"
+		     window window :pointer w :pointer h :void)
+    (list (mem-ref w :int) (mem-ref h :int))))
 
 (defcfun ("glfwGetWindowAttrib" get-window-attribute) :int
   (window window) (attribute window-hint))
@@ -854,16 +882,17 @@ Returns previously set callback."
   "MAXIMIZE-FUN is a callback of type 'void (* GLFWwindowmaximizefun)(GLFWwindow*,int)'.
   Returns previously set callback."
   (window window) (maximize-fun :pointer))
-;;added
-(defcfun ("glfwSetWindowContentScaleCallback" set-window-content-scale-callback) :pointer
-  "CONTENTS-SCALE-FUN is a callback of type 'void (* GLFWwindowContentsScalefun)(GLFWwindow*,float,float)'.
-  Returns previously set callback."
-  (window window) (contents-scale-fun :pointer))
 
 (defcfun ("glfwSetFramebufferSizeCallback" set-framebuffer-size-callback) :pointer
   "FRAMEBUFFER-SIZE-FUN is a callback of type 'void (* GLFWframebuffersizefun)(GLFWwindow*,int,int)'.
 Returns previously set callback."
   (window window) (framebuffer-size-fun :pointer))
+
+;;added
+(defcfun ("glfwSetWindowContentScaleCallback" set-window-content-scale-callback) :pointer
+  "CONTENTS-SCALE-FUN is a callback of type 'void (* GLFWwindowContentsScalefun)(GLFWwindow*,float,float)'.
+  Returns previously set callback."
+  (window window) (contents-scale-fun :pointer))
 
 ;;;; ### Events and input
 (defcfun ("glfwPollEvents" poll-events) (float-traps-masked :void))
@@ -876,6 +905,10 @@ Returns previously set callback."
 
 (defcfun ("glfwPostEmptyEvent" post-empty-event) :void)
 
+(defcfun ("glfwSwapBuffers" swap-buffers) :void
+  (window window))
+
+;;;; ### Input function
 (defcfun ("glfwGetInputMode" get-input-mode) :int
   (window window) (mode input-mode))
 
@@ -883,15 +916,17 @@ Returns previously set callback."
   (window window) (mode input-mode) (value :int))
 
 ;;added
+(defcfun ("glfwRawMouseMotionSupported" raw-mouse-motion-supported-p) :int)
+
+;;added
+(defcfun ("glfwGetKeyName" get-key-name) :string
+  (key key) (scancode :int))
+;;added
 (defcfun ("glfwGetKeyScancode" get-key-scancode) :int
   (key key))
 
 (defcfun ("glfwGetKey" get-key) key-action
   (window window) (key key))
-
-;;added
-(defcfun ("glfwGetKeyName" get-key-name) :string
-  (key key) (scancode :int))
 
 (defcfun ("glfwGetMouseButton" get-mouse-button) key-action
   (window window) (button mouse))
@@ -909,12 +944,15 @@ Returns previously set callback."
 ;;added
 (defcfun ("glfwCreateCursor" create-cursor) (float-traps-masked cursor)
   (image (:pointer (:struct image))) (xhot :int) (yhot :int))
+
 ;;added
 (defcfun ("glfwCreateStandardCursor" create-standard-cursor) (:pointer cursor)
   (shape cursor-shape))
+
 ;;added
 (defcfun ("glfwDestroyCursor" destroy-cursor) :void
   (cursor (:pointer cursor)))
+
 ;;added
 (defcfun ("glfwSetCursor" set-cursor) :void
   (window window) (cursor cursor))
@@ -928,6 +966,12 @@ Returns previously set callback."
   "CHAR-FUN is a callback of type 'void (* GLFWcharfun)(GLFWwindow*,unsigned int)'.
 Returns previously set callback."
   (window window) (char-fun :pointer))
+
+;;added
+(defcfun ("glfwSetCharModsCallback" set-char-mods-callback) :pointer
+  "CHAR-MODS-FUN is a callback of type 'void (* GLFWCharModsfun)(GLFWwindow*,pointer)'.
+Returns previously set callback."
+  (window window) (char-mods-fun :pointer))
 
 (defcfun ("glfwSetMouseButtonCallback" set-mouse-button-callback) :pointer
   "MOUSE-BUTTON-FUN is a callback of type 'void (* GLFWmousebuttonfun)(GLFWwindow*,int,int,int)'.
@@ -949,11 +993,15 @@ Returns previously set callback."
 Returns previously set callback."
   (window window) (SCROLL-FUN :pointer))
 
+;;;; ### files
+;;added
+(defcfun ("glfwSetDropCallback" set-drop-callback) :pointer
+  "DROP-FUN is a callback of type 'void (* GLFWdropfun)(GLFWwindow*,int path_count,string)'.
+Returns previously set callback."
+  (DROP-FUN :pointer))
+
 (defcfun ("glfwJoystickPresent" joystick-present-p) :boolean
   (joystick :int))
-
-;;added
-(defcfun ("glfwRawMouseMotionSupported" raw-mouse-motion-supported-p) :int)
 
 (defun get-joystick-axes (joystick)
   "Returns list of values for each axes of the joystick."
@@ -981,25 +1029,35 @@ Returns previously set callback."
   (joystick :int))
 
 ;;added
+(defcfun ("glfwGetJoystickGUID" get-joystick-guid) :string
+  (joystick :int))
+
+;;added
 (defcfun ("glfwSetJoystickUserPointer" set-joystick-user-pointer) :void
   (joystick joystick) (pointer :pointer))
+
 ;;added
 (defcfun ("glfwGetJoystickUserPointer" get-joystick-user-pointer) :pointer
   (joystick joystick))
+
 ;;added
-(defcfun ("glfwJoystickGamepad" joystick-gamepad) :int
+(defcfun ("glfwJoystickIsGamepad" joystick-is-gamepad) :int
   (joystick joystick))
+
 ;;added
 (defcfun ("glfwSetJoystickCallback" set-joystick-callback) :pointer
   "JOYSTICK-FUN is a callback of type 'void (* GLFWjoystickfun)(int joystick,int event)'.
 Returns previously set callback."
   (JOYSTICK-FUN :pointer))
+
 ;;added
 (defcfun ("glfwUpdateGamepadMappings" update-gamepad-mappings) :int
   (string :string))
+
 ;;added
 (defcfun ("glfwGetGamepadName" get-gamepad-name) :string
   (joystick joystick))
+
 ;;added
 (defcfun ("glfwGetGamepadState" get-gamepad-state) :int
   (joystick joystick) (gamepad-state (:pointer (:struct gamepad-state))))
@@ -1019,24 +1077,15 @@ Returns previously set callback."
 
 ;;added
 (defcfun ("glfwGetTimerValue" get-timer-value) :uint64)
+
 ;;added
 (defcfun ("glfwGetTimerFrequency" get-timer-frequency) :uint64)
-
-;;;; ### files
-;;added
-(defcfun ("glfwSetDropCallback" set-drop-callback) :pointer
-  "DROP-FUN is a callback of type 'void (* GLFWdropfun)(GLFWwindow*,int path_count,string)'.
-Returns previously set callback."
-  (DROP-FUN :pointer))
 
 ;;;; ### Context
 (defcfun ("glfwMakeContextCurrent" make-context-current) :void
   (window window))
 
 (defcfun ("glfwGetCurrentContext" get-current-context) window)
-
-(defcfun ("glfwSwapBuffers" swap-buffers) :void
-  (window window))
 
 (defcfun ("glfwSwapInterval" swap-interval) :void
   (interval :int))
@@ -1047,6 +1096,7 @@ Returns previously set callback."
 (defcfun ("glfwGetProcAddress" get-proc-address) :pointer
   (proc-name :string))
 
+;;;; ### Vulkan function
 (defcfun ("glfwVulkanSupported" vulkan-supported-p) :boolean)
 
 (defun get-required-instance-extensions ()
