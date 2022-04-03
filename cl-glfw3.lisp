@@ -28,7 +28,7 @@
    window-should-close-p
    set-window-should-close
    set-window-title
-   set-window-icon ;added
+   set-window-icon
    get-window-opacity
    set-window-opacity
    get-window-position
@@ -37,13 +37,17 @@
    set-window-size
    set-window-size-limits
    set-window-aspect-ratio
+   get-window-frame-size
    set-window-monitor
    get-window-content-scale
    get-framebuffer-size
    iconify-window
    restore-window
+    maximize-window
    show-window
    hide-window
+focus-window
+    request-window-attention
    get-window-monitor
    get-window-attribute
    get-context-version
@@ -53,14 +57,18 @@
    def-window-refresh-callback
    def-window-focus-callback
    def-window-iconify-callback
+def-window-maximize-callback
    def-framebuffer-size-callback
+def-window-content-scale-callback
    set-window-position-callback
    set-window-size-callback
    set-window-close-callback
    set-window-refresh-callback
    set-window-focus-callback
    set-window-iconify-callback
+set-window-maximize-callback
    set-framebuffer-size-callback
+set-window-content-scale-callback
    get-input-mode
    set-input-mode
    get-key
@@ -282,6 +290,9 @@ SHARED: The window whose context to share resources with."
 (defun set-window-aspect-ratio (width height &optional (window *window*))
   (%glfw:set-window-aspect-ratio window width height))
 
+(defun get-window-frame-size (&optional (window *window*))
+  (%glfw:get-window-frame-size window))
+
 (defun get-window-content-scale (&optional (window *window*))
   (%glfw:get-window-content-scale window))
 
@@ -308,11 +319,20 @@ SHARED: The window whose context to share resources with."
 (defun restore-window (&optional (window *window*))
   (%glfw:restore-window window))
 
+(defun maximize-window (&optional (window *window*))
+  (%glfw:maximize-window window))
+
 (defun show-window (&optional (window *window*))
   (%glfw:show-window window))
 
 (defun hide-window (&optional (window *window*))
   (%glfw:hide-window window))
+
+(defun focus-window (&optional (window *window*))
+  (%glfw:focus-window window))
+
+(defun request-window-attention (&optional (window *window*))
+  (%glfw:request-window-attention window))
 
 (defun get-window-monitor (&optional (window *window*))
   (let ((monitor (%glfw:get-window-monitor window)))
@@ -365,9 +385,19 @@ SHARED: The window whose context to share resources with."
        ((,window :pointer) (,iconifiedp :boolean))
      ,@body))
 
+(defmacro def-window-maximize-callback (name (window maximizedp) &body body)
+  `(%glfw:define-glfw-callback ,name
+     ((,window :pointer) (,maximizedp :boolean))
+     ,@body))
+
 (defmacro def-framebuffer-size-callback (name (window w h) &body body)
   `(%glfw:define-glfw-callback ,name
        ((,window :pointer) (,w :int) (,h :int))
+     ,@body))
+
+(defmacro def-window-content-scale-callback (name (window xscale yscale) &body body)
+  `(%glfw:define-glfw-callback ,name
+     ((,window :pointer) (,xscale :float) (,yscale ,:float))
      ,@body))
 
 (defun set-window-position-callback (callback-name &optional (window *window*))
@@ -388,11 +418,17 @@ SHARED: The window whose context to share resources with."
 (defun set-window-iconify-callback (callback-name &optional (window *window*))
   (%glfw:set-window-iconify-callback window (cffi:get-callback callback-name)))
 
+(defun set-window-maximize-callback (callback-name &optional (window *window*))
+  (%glfw:set-window-maximize-callback window callback-name))
+
 (defun set-framebuffer-size-callback (callback-name &optional (window *window*))
   (%glfw:set-framebuffer-size-callback window (cffi:get-callback callback-name)))
 
+(defun set-window-content-scale-callback (callback-name &optional (window *window*))
+  (%glfw:set-window-content-scale-callback window (cffi:get-callback callback-name)))
+
 ;;;; ## Events and input
-(import-export %glfw:poll-events %glfw:wait-events %glfw:post-empty-event)
+(import-export %glfw:poll-events %glfw:wait-events %glfw:wait-events-timeout %glfw:post-empty-event)
 
 (defun get-input-mode (mode &optional (window *window*))
   "Mode is one of :CURSOR :STICKY-KEYS or :STICKY-MOUSE-BUTTONS."

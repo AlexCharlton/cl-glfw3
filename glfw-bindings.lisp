@@ -16,7 +16,7 @@
    get-monitors
    get-primary-monitor
    get-monitor-position
-   get-monitor-workarea ;get-monitor-workarea?
+   get-monitor-workarea
    get-monitor-physical-size
    get-monitor-content-scale
    get-monitor-name
@@ -48,16 +48,16 @@
    set-window-size
    set-window-size-limits
    set-window-aspect-ratio
-   get-window-frame-size ;added
+   get-window-frame-size ;added exported
    get-window-content-scale
    get-framebuffer-size
    iconify-window
    restore-window
-   maximize-window ;added
+   maximize-window ;added exported
    show-window
    hide-window
-   focus-window ;added
-   request-window-attention ;added
+   focus-window ;added exported
+   request-window-attention ;added exported
    get-window-monitor
    get-window-attribute
    set-window-user-pointer
@@ -68,13 +68,13 @@
    set-window-refresh-callback
    set-window-focus-callback
    set-window-iconify-callback
-   set-window-maximize-callback ;added
+   set-window-maximize-callback ;added exported
    set-framebuffer-size-callback
-   set-window-content-scale-callback ;added
+   set-window-content-scale-callback ;added exported
    set-window-monitor
    poll-events
    wait-events
-   wait-events-timeout ;added
+   wait-events-timeout ;added exported
    post-empty-event
    ;;input
    get-input-mode
