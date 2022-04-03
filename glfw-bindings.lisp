@@ -6,11 +6,13 @@
 
 (export
  '(+dont-care+
+   ;;initialize
    init
    terminate
    get-version
    get-version-string
    set-error-callback
+   ;;monitor
    get-monitors
    get-primary-monitor
    get-monitor-position
@@ -18,6 +20,8 @@
    get-monitor-physical-size
    get-monitor-content-scale
    get-monitor-name
+   set-monitor-user-pointer ;added
+   get-monitor-user-pointer ;added
    set-monitor-callback
    get-video-modes
    get-video-mode
@@ -27,6 +31,7 @@
    set-gamma
    get-gamma-ramp
    set-gamma-ramp
+   ;;window
    default-window-hints
    window-hint
    create-window
@@ -34,6 +39,7 @@
    window-should-close-p
    set-window-should-close
    set-window-title
+   set-window-icon ;added
    get-window-opacity
    set-window-opacity
    get-window-position
@@ -42,12 +48,16 @@
    set-window-size
    set-window-size-limits
    set-window-aspect-ratio
+   get-window-frame-size ;added
    get-window-content-scale
    get-framebuffer-size
    iconify-window
    restore-window
+   maximize-window ;added
    show-window
    hide-window
+   focus-window ;added
+   request-window-attention ;added
    get-window-monitor
    get-window-attribute
    set-window-user-pointer
@@ -58,37 +68,63 @@
    set-window-refresh-callback
    set-window-focus-callback
    set-window-iconify-callback
+   set-window-maximize-callback ;added
    set-framebuffer-size-callback
+   set-window-content-scale-callback ;added
    set-window-monitor
    poll-events
    wait-events
+   wait-events-timeout ;added
    post-empty-event
+   ;;input
    get-input-mode
    set-input-mode
+   raw-mouse-motion-supported-p ;added
+   get-key-name ;added
+   get-key-scancode ;added
    get-key
    get-mouse-button
    get-cursor-position
    set-cursor-position
+   create-cursor ;added
+   create-standard-cursor ;added
+   destroy-cursor ;added
+   set-cursor ;added
    set-key-callback
    set-char-callback
+   set-char-mods-callback ;;added
    set-mouse-button-callback
    set-cursor-position-callback
    set-cursor-enter-callback
    set-scroll-callback
+   set-drop-callback ;added
    joystick-present-p
    get-joystick-axes
    get-joystick-buttons
+   get-joystick-hats ;added
    get-joystick-name
+   get-joystick-guid ;added
+   set-joystick-user-pointer ;added
+   get-joystick-user-pointer ;added
+   joystick-is-gamepad ;added
+   set-joystick-callback ;added
+   update-gamepad-mappings ;added
+   get-gamepad-name ;added
+   get-gamepad-state ;added
    set-clipboard-string
    get-clipboard-string
    get-time
    set-time
+   get-timer-value ;added
+   get-timer-frequency ;added
+   ;;context
    make-context-current
    get-current-context
    swap-buffers
    swap-interval
    extension-supported-p
    get-proc-address
+   ;;vulkan
    vulkan-supported-p
    get-required-instance-extensions
    get-instance-proc-address
@@ -96,40 +132,9 @@
    create-window-surface
 
    ;;added
-   get-version-string
-   image
    ;;window
-   set-window-icon
-   get-window-frame-size
-   maximize-window
-   focus-window
-   request-window-attention
-   set-window-maximize-callback
-   set-window-content-scale-callback
-   wait-events-timeout
    ;;monitor
-   set-monitor-user-pointer
-   get-monitor-user-pointer
    ;;input
-   get-key-scancode
-   get-key-name
-   raw-mouse-motion-supported-p
-   create-cursor
-   create-standard-cursor
-   set-cursor
-   get-joystick-hat
-   set-joystick-user-pointer
-   get-joystick-user-pointer
-   joystick-is-gamepad
-   set-joystick-callback
-   update-gamepad-mappings
-   get-gamepad-name
-   get-gamepad-state
-   get-timer-value
-   get-timer-frequency
-   set-drop-callback
-   get-joystick-guid
-   set-char-mods-callback
  ))
 
 ;; internal stuff
@@ -631,7 +636,6 @@ not recommended
     (foreign-funcall "glfwGetVersion" :pointer major :pointer minor :pointer rev)
     (values (mem-ref major :int) (mem-ref minor :int) (mem-ref rev :int))))
 
-;;added
 (defcfun ("glfwGetVersionString" get-version-string) :string)
 
 (defcfun ("glfwSetErrorCallback" set-error-callback) :pointer
@@ -1005,6 +1009,7 @@ Returns previously set callback."
 Returns previously set callback."
   (DROP-FUN :pointer))
 
+;;;; ### joystick
 (defcfun ("glfwJoystickPresent" joystick-present-p) :boolean
   (joystick :int))
 

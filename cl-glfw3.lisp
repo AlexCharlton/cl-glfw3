@@ -101,16 +101,16 @@
     (alexandria:once-only (image)
       `(let ((,width (image-width ,image))
              (,height (image-height ,image)))
-         (cffi:with-foreign-objects ((,image-ptr '(:struct %glfw:image))
+         (cffi:with-foreign-objects ((,image-ptr '(:struct %glfw::image))
                                      (,pixels :uchar (* ,width ,height 4)));4=rgba
            (loop for col from 0 below ,height do
                  (loop for row from 0 below ,width do
                        (let ((address (+ row (* ,width col))))
                          (setf (cffi:mem-aref ,pixels address)
                                (aref (image-pixels ,image) address)))))
-           (setf (cffi:foreign-slot-value ,image-ptr '(:struct %glfw:image) '%glfw::width) ,width
-                 (cffi:foreign-slot-value ,image-ptr '(:struct %glfw:image) '%glfw::height) ,height
-                 (cffi:foreign-slot-value ,image-ptr '(:struct %glfw:image) '%glfw::pixels) ,pixels)
+           (setf (cffi:foreign-slot-value ,image-ptr '(:struct %glfw::image) '%glfw::width) ,width
+                 (cffi:foreign-slot-value ,image-ptr '(:struct %glfw::image) '%glfw::height) ,height
+                 (cffi:foreign-slot-value ,image-ptr '(:struct %glfw::image) '%glfw::pixels) ,pixels)
            (let ((,image-var ,image-ptr))
              ,@body))))))
 
