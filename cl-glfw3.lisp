@@ -18,9 +18,10 @@
    set-error-callback
    initialize
    with-init
+get-monitor-work-area
    def-monitor-callback
    *window*
-    image ;added
+    image
    create-window
    destroy-window
    with-window
@@ -149,27 +150,32 @@ def-joystick-callback
 (defun set-error-callback (callback-name)
   (%glfw:set-error-callback (cffi:get-callback callback-name)))
 
-(defun initialize ()
+(defun initialize (&key (joystick-hat-buttons t)
+                        (cocoa-chdid-resources t)
+                        (cocoa-menubar t))
   "Start GLFW"
+  (%glfw:init-hint :joystick-hat-buttons joystick-hat-buttons)
+  (%glfw:init-hint :cocoa-chdid-resources cocoa-chdid-resources)
+  (%glfw:init-hint :cocoa-menubar cocoa-menubar)
   (let ((result (%glfw:init)))
     (unless result
       (error "Error initializing glfw."))
     result))
 
-(defmacro with-init (&body body)
+(defmacro with-init ((&rest init-keys) &body body)
   "Wrap BODY with an initialized GLFW instance, ensuring proper termination. If no error callback is set when this is called, a default error callback is set."
   `(progn
      (let ((prev-error-fun (set-error-callback 'default-error-fun)))
        (unless (cffi:null-pointer-p prev-error-fun)
 	 (%glfw:set-error-callback prev-error-fun)))
-     (initialize)
+     (initialize ,@init-keys)
      (unwind-protect (progn ,@body)
        (%glfw:terminate))))
 
 (import-export %glfw:get-monitors %glfw:get-primary-monitor %glfw:get-monitor-position %glfw:get-monitor-workarea %glfw:get-monitor-physical-size %glfw:get-monitor-content-scale %glfw:get-monitor-name %glfw:set-monitor-callback %glfw:get-video-modes %glfw:get-video-mode %glfw:set-gamma %glfw:get-gamma-ramp %glfw:set-gamma-ramp %glfw:terminate)
 
-;added
 (defun get-monitor-work-area (monitor)
+  "Inconsistent name of get-monitor-workarea. old-version used this name"
   (warn "get-monitor-work-area is inconsistent name of foreign function.~% get-monitor-workarea is recommended")
   (%glfw:get-monitor-workarea monitor))
 
@@ -259,7 +265,7 @@ SHARED: The window whose context to share resources with."
 
 (defmacro with-init-window ((&rest window-keys) &body body)
   "Convenience macro for setting up GLFW and opening a window."
-  `(with-init
+  `(with-init ()
      (with-window ,window-keys ,@body)))
 
 (defun window-should-close-p (&optional (window *window*))

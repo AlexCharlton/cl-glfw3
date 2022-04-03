@@ -9,6 +9,7 @@
    ;;initialize
    init
    terminate
+init-hint ;added exported
    get-version
    get-version-string
    set-error-callback
@@ -92,7 +93,7 @@
    set-cursor ;added exported
    set-key-callback
    set-char-callback
-   set-char-mods-callback ;;added exported
+   set-char-mods-callback ;added exported
    set-mouse-button-callback
    set-cursor-position-callback
    set-cursor-enter-callback
@@ -229,6 +230,10 @@ CFFI's defcallback that takes care of GLFW specifics."
 (alexandria:define-constant +dont-care+ -1)
 
 ;;;; ## GLFW Types
+(defcenum (initialize-hint)
+  (:joystick-hat-buttons #x00050001)
+  (:cocoa-chdid-resources #x00051001)
+  (:cocoa-menubar #x00051002))
 
 (defcenum (key-action)
   :release
@@ -629,6 +634,9 @@ not recommended
 ;;;; ## GLFW Functions
 (defcfun ("glfwInit" init) :boolean)
 (defcfun ("glfwTerminate" terminate) :void)
+
+(defcfun ("glfwInitHint" init-hint) :void
+  (hint initialize-hint) (value :boolean))
 
 (defun get-version ()
   "Returns major, minor, and revison numbers of GLFW library. May be called before INIT."
