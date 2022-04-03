@@ -75,19 +75,24 @@ set-window-content-scale-callback
    get-mouse-button
    get-cursor-position
    set-cursor-position
-   create-cursor
+create-cursor
+set-cursor
    def-key-callback
    def-char-callback
+def-char-mods-callback
    def-mouse-button-callback
    def-cursor-pos-callback
    def-cursor-enter-callback
    def-scroll-callback
+    def-drop-callback
    set-key-callback
    set-char-callback
+set-char-mods-callback
    set-mouse-button-callback
    set-cursor-position-callback
    set-cursor-enter-callback
    set-scroll-callback
+def-joystick-callback
    set-clipboard-string
    get-clipboard-string
    make-context-current
@@ -312,10 +317,6 @@ SHARED: The window whose context to share resources with."
   (cond ((null image) (%glfw:set-window-icon window 0 (cffi:null-pointer)))
         (t (with-image-pointer (pointer image) (%glfw:set-window-icon window 0 pointer)))))
 
-(defun create-cursor (image xhot yhot)
-  (cond ((null image) (%glfw:create-cursor (cffi:null-pointer) xhot yhot))
-        (t (with-image-pointer (pointer image) (%glfw:create-cursor pointer xhot yhot)))))
-
 (defun restore-window (&optional (window *window*))
   (%glfw:restore-window window))
 
@@ -459,6 +460,13 @@ SHARED: The window whose context to share resources with."
 (defun set-cursor-position (x y &optional (window *window*))
   (%glfw:set-cursor-position window x y))
 
+(defun create-cursor (image xhot yhot)
+  (cond ((null image) (%glfw:create-cursor (cffi:null-pointer) xhot yhot))
+        (t (with-image-pointer (pointer image) (%glfw:create-cursor pointer xhot yhot)))))
+
+(defun set-cursor (cursor &optional (window *window*))
+  (%glfw:set-cursor window cursor))
+
 (defmacro def-key-callback (name (window key scancode action mod-keys) &body body)
   `(%glfw:define-glfw-callback ,name
        ((,window :pointer) (,key %glfw::key) (,scancode :int)
@@ -471,6 +479,13 @@ SHARED: The window whose context to share resources with."
 	((,window :pointer) (,char-code :unsigned-int))
       (let ((,char (code-char ,char-code)))
 	,@body))))
+
+(defmacro def-char-mods-callback (name (window char mod-keys) &body body)
+  (let ((char-code (gensym "char")))
+    `(%glfw:define-glfw-callback ,name
+       ((,window :pointer) (,char-code :unsigned-int) (,mod-keys %glfw::mod-keys))
+       (let ((,char (code-char ,char-code)))
+         ,@body))))
 
 (defmacro def-mouse-button-callback (name (window button action mod-keys) &body body)
   `(%glfw:define-glfw-callback ,name
@@ -493,11 +508,26 @@ SHARED: The window whose context to share resources with."
        ((,window :pointer) (,x :double) (,y :double))
      ,@body))
 
+;;added
+;;must: support function
+(defmacro def-drop-callback (name (window number-of-pathes pathes) &body body)
+  `(%glfw:define-glfw-callback ,name
+     ((,window :pointer) (,number-of-pathes :int) (,pathes (:pointer (:pointer (:struct :char)))))
+     ,@body))
+
+(defmacro def-joystick-callback (name (joystick event) &body body)
+  `(%glfw:define-glfw-callback ,name
+     ((,joystick int) (,event %glfw::monitor-event))
+     ,@body))
+
 (defun set-key-callback (callback-name &optional (window *window*))
   (%glfw:set-key-callback window (cffi:get-callback callback-name)))
 
 (defun set-char-callback (callback-name &optional (window *window*))
   (%glfw:set-char-callback window (cffi:get-callback callback-name)))
+
+(defun set-char-mods-callback (callback-name &optional (window *window*))
+  (%glfw:set-char-mods-callback window (cffi:get-callback callback-name)))
 
 (defun set-mouse-button-callback (callback-name &optional (window *window*))
   (%glfw:set-mouse-button-callback window (cffi:get-callback callback-name)))
@@ -511,7 +541,11 @@ SHARED: The window whose context to share resources with."
 (defun set-scroll-callback (callback-name &optional (window *window*))
   (%glfw:set-scroll-callback window (cffi:get-callback callback-name)))
 
-(import-export %glfw:joystick-present-p %glfw:get-joystick-axes %glfw:get-joystick-buttons %glfw:get-joystick-name)
+(import-export %glfw:raw-mouse-motion-supported-p %glfw:get-key-name %glfw:get-key-scancode %glfw:destroy-cursor
+               %glfw:create-standard-cursor
+               %glfw:joystick-present-p %glfw:get-joystick-axes %glfw:get-joystick-buttons %glfw:get-joystick-hats
+               %glfw:get-joystick-name %glfw:get-joystick-guid %glfw:joystick-is-gamepad-p %glfw:update-gamepad-mappings
+               %glfw:get-gamepad-name %glfw:get-gamepad-state %glfw:get-timer-value %glfw:get-timer-frequency)
 
 ;;added
 (deftype joystick-id () '(integer 0 15))

@@ -79,44 +79,44 @@
    ;;input
    get-input-mode
    set-input-mode
-   raw-mouse-motion-supported-p ;added
-   get-key-name ;added
-   get-key-scancode ;added
+   raw-mouse-motion-supported-p ;added exported
+   get-key-name ;added exported
+   get-key-scancode ;added exported
    get-key
    get-mouse-button
    get-cursor-position
    set-cursor-position
    create-cursor ;added exported
-   create-standard-cursor ;added
-   destroy-cursor ;added
-   set-cursor ;added
+   create-standard-cursor ;added exported
+   destroy-cursor ;added exported
+   set-cursor ;added exported
    set-key-callback
    set-char-callback
-   set-char-mods-callback ;;added
+   set-char-mods-callback ;;added exported
    set-mouse-button-callback
    set-cursor-position-callback
    set-cursor-enter-callback
    set-scroll-callback
-   set-drop-callback ;added
+   set-drop-callback ;added exported
    joystick-present-p
    get-joystick-axes
    get-joystick-buttons
-   get-joystick-hats ;added
+   get-joystick-hats ;added exported
    get-joystick-name
-   get-joystick-guid ;added
+   get-joystick-guid ;added exported
    set-joystick-user-pointer ;added
    get-joystick-user-pointer ;added
-   joystick-is-gamepad ;added
-   set-joystick-callback ;added
-   update-gamepad-mappings ;added
-   get-gamepad-name ;added
-   get-gamepad-state ;added
+   joystick-is-gamepad-p ;added exported
+   set-joystick-callback ;added exported
+   update-gamepad-mappings ;added exported
+   get-gamepad-name ;added exported
+   get-gamepad-state ;added exported
    set-clipboard-string
    get-clipboard-string
    get-time
    set-time
-   get-timer-value ;added
-   get-timer-frequency ;added
+   get-timer-value ;added exported
+   get-timer-frequency ;added exported
    ;;context
    make-context-current
    get-current-context
@@ -559,6 +559,7 @@ not recommended
   (:opengl-core-profile #x00032001)
   (:opengl-compat-profile #x00032002))
 
+;;todo monitor-event -> connect-event joystick is also associated
 ;; # for monitor callbacks
 (defcenum (monitor-event)
   (:connected #X00040001)
@@ -1005,7 +1006,7 @@ Returns previously set callback."
 ;;;; ### files
 ;;added
 (defcfun ("glfwSetDropCallback" set-drop-callback) :pointer
-  "DROP-FUN is a callback of type 'void (* GLFWdropfun)(GLFWwindow*,int path_count,string)'.
+  "DROP-FUN is a callback of type 'void (* GLFWdropfun)(GLFWwindow*,int path_count,struct char** path_names)'.
 Returns previously set callback."
   (DROP-FUN :pointer))
 
@@ -1032,8 +1033,14 @@ Returns previously set callback."
         'key-action)))
 
 ;;added
-(defcfun ("glfwGetJoystickHats" get-joystick-hats) (:pointer hat)
-  (jid :int) (count (:pointer :int)))
+(defun get-joystick-hats (joystick)
+  "Returns list of values for direction of the joystick."
+  (with-foreign-object (count :int)
+    (c-array->list (foreign-funcall "glfwGetJoystickHats"
+                                    :int joystick :pointer count
+                                    :pointer)
+                   (mem-ref count :int)
+                   'hats)))
 
 (defcfun ("glfwGetJoystickName" get-joystick-name) :string
   (joystick :int));jid
@@ -1051,7 +1058,7 @@ Returns previously set callback."
   (joystick :int))
 
 ;;added
-(defcfun ("glfwJoystickIsGamepad" joystick-is-gamepad) :int
+(defcfun ("glfwJoystickIsGamepad" joystick-is-gamepad-p) :boolean
   (joystick :int))
 
 ;;added
@@ -1061,7 +1068,7 @@ Returns previously set callback."
   (JOYSTICK-FUN :pointer))
 
 ;;added
-(defcfun ("glfwUpdateGamepadMappings" update-gamepad-mappings) :int
+(defcfun ("glfwUpdateGamepadMappings" update-gamepad-mappings) :boolean
   (string :string))
 
 ;;added
@@ -1069,7 +1076,7 @@ Returns previously set callback."
   (joystick :int))
 
 ;;added
-(defcfun ("glfwGetGamepadState" get-gamepad-state) :int
+(defcfun ("glfwGetGamepadState" get-gamepad-state) :boolean
   (joystick :int) (gamepad-state (:pointer (:struct gamepad-state))))
 
 ;;;; ### Clipboard
