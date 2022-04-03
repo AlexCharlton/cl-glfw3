@@ -97,6 +97,7 @@
 
    ;;added
    get-version-string
+   image
    ;;window
    set-window-icon
    get-window-frame-size

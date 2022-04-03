@@ -89,6 +89,31 @@
   (when (/= major 3)
     (error "Local GLFW is ~a.~a.~a, should be above 3.x" major minor rev)))
 
+;;;; image
+(defstruct image
+  (width)
+  (height)
+  (pixels))
+
+(defmacro with-image-pointer ((image-var image) &body body)
+  "translate image object from lisp to C and bind pointer of C image object to image-var symbol"
+  (alexandria:with-gensyms (width height pixels image-ptr)
+    (alexandria:once-only (image)
+      `(let ((,width (image-width ,image))
+             (,height (image-height ,image)))
+         (cffi:with-foreign-objects ((,image-ptr '(:struct %glfw:image))
+                                     (,pixels :uchar (* ,width ,height 4)));4=rgba
+           (loop for col from 0 below ,height do
+                 (loop for row from 0 below ,width do
+                       (let ((address (+ row (* ,width col))))
+                         (setf (cffi:mem-aref ,pixels address)
+                               (aref (image-pixels ,image) address)))))
+           (setf (cffi:foreign-slot-value ,image-ptr '(:struct %glfw:image) '%glfw::width) ,width
+                 (cffi:foreign-slot-value ,image-ptr '(:struct %glfw:image) '%glfw::height) ,height
+                 (cffi:foreign-slot-value ,image-ptr '(:struct %glfw:image) '%glfw::pixels) ,pixels)
+           (let ((,image-var ,image-ptr))
+             ,@body))))))
+
 ;;;; ## Window and monitor functions
 (defmacro import-export (&rest symbols)
   `(eval-when (:compile-toplevel :load-toplevel :execute)
@@ -264,6 +289,14 @@ SHARED: The window whose context to share resources with."
 (defun iconify-window (&optional (window *window*))
   (%glfw:iconify-window window))
 
+(defun set-window-icon (image &optional (window *window*))
+  (cond ((null image) (%glfw:set-window-icon window 0 (cffi:null-pointer)))
+        (t (with-image-pointer (pointer image) (%glfw:set-window-icon window 0 pointer)))))
+
+(defun create-cursor (image xhot yhot)
+  (cond ((null image) (%glfw:create-cursor (cffi:null-pointer) xhot yhot))
+        (t (with-image-pointer (pointer image) (%glfw:create-cursor pointer xhot yhot)))))
+
 (defun restore-window (&optional (window *window*))
   (%glfw:restore-window window))
 
@@ -435,6 +468,9 @@ SHARED: The window whose context to share resources with."
   (%glfw:set-scroll-callback window (cffi:get-callback callback-name)))
 
 (import-export %glfw:joystick-present-p %glfw:get-joystick-axes %glfw:get-joystick-buttons %glfw:get-joystick-name)
+
+;;added
+(deftype joystick-id () '(integer 0 15))
 
 ;;;; ## Clipboard
 
