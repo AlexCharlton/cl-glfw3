@@ -35,6 +35,7 @@ init-hint ;added exported
    ;;window
    default-window-hints
    window-hint
+   window-hint-string
    create-window
    destroy-window
    window-should-close-p
@@ -485,6 +486,13 @@ CFFI's defcallback that takes care of GLFW specifics."
   (:resizable #X00020003)
   (:visible #X00020004)
   (:decorated #X00020005)
+  (:auto-iconify #x00020006) ;added
+  (:floating #x00020007) ;added
+  (:maximized #x00020008) ;added
+  (:center-cursor #x00020009) ;added
+  (:transparent-framebuffer #x0002000a) ;added
+  (:hovered #x0002000b) ;added
+  (:focus-on-show #x0002000c) ;added
   (:red-bits #X00021001)
   (:green-bits #X00021002)
   (:blue-bits #X00021003)
@@ -500,6 +508,7 @@ CFFI's defcallback that takes care of GLFW specifics."
   (:samples #X0002100d)
   (:srgb-capable #X0002100E)
   (:refresh-rate #X0002100F)
+  (:doublebuffer #x00021010) ;added
   (:client-api #X00022001)
   (:context-version-major #x00022002)
   (:context-version-minor #x00022003)
@@ -508,27 +517,15 @@ CFFI's defcallback that takes care of GLFW specifics."
   (:opengl-forward-compat #x00022006)
   (:opengl-debug-context #x00022007)
   (:opengl-profile #X00022008)
-  ;;added
-  ;;window-hint
-  (:doublebuffer #x00021010)
-  (:context-creation-api #x0002200b)
-  (:auto-iconify #x00020006)
-  (:maximized #x00020008)
-  (:center-cursor #x00020009)
-  (:transparent-framebuffer #x0002000a)
-  (:focus-on-show #x0002000c)
-  (:scale-to-monitor #x0002200c)
-  (:hovered #x0002000b)
-  (:floating #x00020007)
-  ;;context
-  (:context-release-behavior #x00022009)
-  (:context-no-error #x0002200a)
-  ;;not-tested
-  #+darwin (:cocoa-retina-framebuffer #x00023001)
-  #+darwin (:cocoa-frame-name #x00023002)
-  #+darwin (:cocoa-graphics-switching #x00023003)
-  #+linux (:x11-class-name #x00024001)
-  #+linux (:x11-instance-name #x00024002)
+  (:context-release-behavior #x00022009) ;added
+  (:context-no-error #x0002200a) ;added
+  (:context-creation-api #x0002200b) ;added
+  (:scale-to-monitor #x0002200c) ;added
+  (:cocoa-retina-framebuffer #x00023001) ;added
+  (:cocoa-frame-name #x00023002) ;added
+  (:cocoa-graphics-switching #x00023003) ;added
+  (:x11-class-name #x00024001) ;added
+  (:x11-instance-name #x00024002) ;added
   )
 
 ;; # for client-api hit
@@ -537,14 +534,11 @@ CFFI's defcallback that takes care of GLFW specifics."
   (:opengl-api #X00030001)
   (:opengl-es-api #X00030002))
 
-#|
-;; # for context-creation-api
-not recommended
-(defcenum (context-robustness)
-          (:no-robustness 0)
-          (:no-reset-notification #x00031001)
-          (:lose-context-on-reset #x00031002))
-|#
+;; # for context-creation-api hint
+(defcenum (context-creation)
+  (:native-context-api #x00036001)
+  (:egl-context-api #x00036002)
+  (osmesa-context #x00036003))
 
 ;; # for context-robustness hint
 (defcenum (robustness)
@@ -740,7 +734,7 @@ Returns previously set callback."
   (target window-hint) (hint :int))
 
 (defcfun ("glfwWindowHintString" window-hint-string) :void
-  (target window-hint) (hint (:pointer :char)))
+  (target window-hint) (window-hint-string :string))
 
 (defcfun ("glfwCreateWindow" create-window) (float-traps-masked window)
   "Returns a window pointer that shares resources with the window SHARED or NULL."
