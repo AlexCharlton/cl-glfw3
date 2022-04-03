@@ -559,9 +559,8 @@ not recommended
   (:opengl-core-profile #x00032001)
   (:opengl-compat-profile #x00032002))
 
-;;todo monitor-event -> connect-event joystick is also associated
 ;; # for monitor callbacks
-(defcenum (monitor-event)
+(defcenum (connection-event)
   (:connected #X00040001)
   (:disconnected #X00040002))
 
@@ -696,7 +695,7 @@ Returns the previous error callback."
 
 (defcfun ("glfwSetMonitorCallback" set-monitor-callback) :pointer
   "MONITOR-FUN is a callback of type 'void (* GLFWmonitorfun)(GLFWmonitor* monitor,int event)'.
-  event is one of the monitor-event
+  event is one of the connection-event
 Returns previously set callback."
   (monitor-fun :pointer))
 

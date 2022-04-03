@@ -112,7 +112,7 @@ def-joystick-callback
   (pixels))
 
 (defmacro with-image-pointer ((image-var image) &body body)
-  "translate image object from lisp to C and bind pointer of C image object to image-var symbol"
+  "Internal function. translate image object from lisp to C and bind pointer of C image object to image-var symbol"
   (alexandria:with-gensyms (width height pixels image-ptr)
     (alexandria:once-only (image)
       `(let ((,width (image-width ,image))
@@ -175,7 +175,7 @@ def-joystick-callback
 
 (defmacro def-monitor-callback (name (monitor event) &body body)
   `(%glfw:define-glfw-callback ,name
-       ((,monitor :pointer) (,event %glfw::monitor-event))
+       ((,monitor :pointer) (,event %glfw::connection-event))
      ,@body))
 
 (defvar *window* nil
@@ -517,7 +517,7 @@ SHARED: The window whose context to share resources with."
 
 (defmacro def-joystick-callback (name (joystick event) &body body)
   `(%glfw:define-glfw-callback ,name
-     ((,joystick int) (,event %glfw::monitor-event))
+     ((,joystick int) (,event %glfw::connection-event))
      ,@body))
 
 (defun set-key-callback (callback-name &optional (window *window*))
