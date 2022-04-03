@@ -16,7 +16,7 @@
    get-monitors
    get-primary-monitor
    get-monitor-position
-   get-monitor-work-area ;get-monitor-workarea?
+   get-monitor-workarea ;get-monitor-workarea?
    get-monitor-physical-size
    get-monitor-content-scale
    get-monitor-name
@@ -39,7 +39,7 @@
    window-should-close-p
    set-window-should-close
    set-window-title
-   set-window-icon ;added
+   set-window-icon ;added exported
    get-window-opacity
    set-window-opacity
    get-window-position
@@ -86,7 +86,7 @@
    get-mouse-button
    get-cursor-position
    set-cursor-position
-   create-cursor ;added
+   create-cursor ;added exported
    create-standard-cursor ;added
    destroy-cursor ;added
    set-cursor ;added
@@ -662,7 +662,7 @@ Returns the previous error callback."
 		     monitor monitor :pointer x :pointer y :void)
     (list (mem-ref x :int) (mem-ref y :int))))
 
-(defun get-monitor-work-area (monitor)
+(defun get-monitor-workarea (monitor)
   "Returned work area is (x y w h) in screen coordinates."
   (with-foreign-objects ((x :int) (y :int) (w :int) (h :int))
     (foreign-funcall "glfwGetMonitorWorkarea"

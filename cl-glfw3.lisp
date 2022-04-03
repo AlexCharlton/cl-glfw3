@@ -20,6 +20,7 @@
    with-init
    def-monitor-callback
    *window*
+    image ;added
    create-window
    destroy-window
    with-window
@@ -27,6 +28,7 @@
    window-should-close-p
    set-window-should-close
    set-window-title
+   set-window-icon ;added
    get-window-opacity
    set-window-opacity
    get-window-position
@@ -65,6 +67,7 @@
    get-mouse-button
    get-cursor-position
    set-cursor-position
+   create-cursor
    def-key-callback
    def-char-callback
    def-mouse-button-callback
@@ -150,7 +153,12 @@
      (unwind-protect (progn ,@body)
        (%glfw:terminate))))
 
-(import-export %glfw:get-monitors %glfw:get-primary-monitor %glfw:get-monitor-position %glfw:get-monitor-work-area %glfw:get-monitor-physical-size %glfw:get-monitor-content-scale %glfw:get-monitor-name %glfw:set-monitor-callback %glfw:get-video-modes %glfw:get-video-mode %glfw:set-gamma %glfw:get-gamma-ramp %glfw:set-gamma-ramp %glfw:terminate)
+(import-export %glfw:get-monitors %glfw:get-primary-monitor %glfw:get-monitor-position %glfw:get-monitor-workarea %glfw:get-monitor-physical-size %glfw:get-monitor-content-scale %glfw:get-monitor-name %glfw:set-monitor-callback %glfw:get-video-modes %glfw:get-video-mode %glfw:set-gamma %glfw:get-gamma-ramp %glfw:set-gamma-ramp %glfw:terminate)
+
+;added
+(defun get-monitor-work-area (monitor)
+  (warn "get-monitor-work-area is inconsistent name of foreign function.~% get-monitor-workarea is recommended")
+  (%glfw:get-monitor-workarea monitor))
 
 (defmacro def-monitor-callback (name (monitor event) &body body)
   `(%glfw:define-glfw-callback ,name
