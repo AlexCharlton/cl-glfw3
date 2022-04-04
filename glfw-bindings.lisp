@@ -948,16 +948,16 @@ Returns previously set callback."
   (window window) (x :double) (y :double))
 
 ;;added
-(defcfun ("glfwCreateCursor" create-cursor) (float-traps-masked cursor)
+(defcfun ("glfwCreateCursor" create-cursor) cursor
   (image (:pointer (:struct image))) (xhot :int) (yhot :int))
 
 ;;added
-(defcfun ("glfwCreateStandardCursor" create-standard-cursor) (:pointer cursor)
+(defcfun ("glfwCreateStandardCursor" create-standard-cursor) cursor
   (shape cursor-shape))
 
 ;;added
 (defcfun ("glfwDestroyCursor" destroy-cursor) :void
-  (cursor (:pointer cursor)))
+  (cursor cursor))
 
 ;;added
 (defcfun ("glfwSetCursor" set-cursor) :void

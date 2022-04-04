@@ -116,13 +116,37 @@ def-joystick-callback
     (error "Local GLFW is ~a.~a.~a, should be above 3.x" major minor rev)))
 
 ;;;; image
-(defstruct image
-  (width)
-  (height)
-  (pixels))
+(defstruct (image
+             (:constructor make-image (width height
+                                             &aux (width width) (height height)
+                                             (pixels (make-array (* 4 width height))))))
+  width
+  height
+  pixels)
 
-(defmacro with-image-pointer ((image-var image) &body body)
-  "Internal function. translate image object from lisp to C and bind pointer of C image object to image-var symbol"
+(defmacro with-image-pointer ((var image) &body body)
+  "Internal function"
+  ;;マクロの準備
+  (alexandria:with-gensyms (width height pixels image-ptr)
+    (alexandria:once-only (image)
+      `(let ((,width (image-width ,image))
+             (,height (image-height ,image)))
+         ;;ポインタを取得し中身をalloc
+         (cffi:with-foreign-pointer (,image-ptr ,(* 2 3));int*2+pointer=int*3=2*3 bytes
+           ;;中身を詰める
+           (cffi:with-foreign-pointer (,pixels (* 1 ,width ,height 4));4=rgba
+             (loop for i from 0 below (* ,width ,height 4) do
+                   (setf (cffi:mem-ref ,pixels :uchar i)
+                         (aref (image-pixels ,image) i)))
+             (setf (cffi:mem-ref ,image-ptr :int) ,width
+                   (cffi:mem-ref ,image-ptr :int 4) ,height
+                   (cffi:mem-ref ,image-ptr :pointer 8) ,pixels)
+             ;;ポインタを変数に束縛しbody展開
+             (let ((,var ,image-ptr))
+               ,@body)))))))
+
+(defmacro with-image-array-pointer ((var image) &body body)
+  "Internal function. translate image object from lisp to C and bind pointer of C image object to var symbol"
   (alexandria:with-gensyms (width height pixels image-ptr)
     (alexandria:once-only (image)
       `(let ((,width (image-width ,image))
@@ -135,7 +159,7 @@ def-joystick-callback
              (setf (cffi:foreign-slot-value ,image-ptr '(:struct %glfw::image) '%glfw::width) ,width
                    (cffi:foreign-slot-value ,image-ptr '(:struct %glfw::image) '%glfw::height) ,height
                    (cffi:foreign-slot-value ,image-ptr '(:struct %glfw::image) '%glfw::pixels) ,pixels)
-             (let ((,image-var ,image-ptr))
+             (let ((,var ,image-ptr))
                ,@body)))))))
 
 ;;;; ## Window and monitor functions
@@ -367,7 +391,8 @@ SHARED: The window whose context to share resources with."
 
 (defun set-window-icon (image &optional (window *window*))
   (cond ((null image) (%glfw:set-window-icon window 0 (cffi:null-pointer)))
-        (t (with-image-pointer (pointer image) (%glfw:set-window-icon window 1 pointer)))))
+        (t (with-image-array-pointer (pointer image)
+             (%glfw:set-window-icon window 1 pointer)))))
 
 (defun restore-window (&optional (window *window*))
   (%glfw:restore-window window))
