@@ -11,4 +11,5 @@
                (:file "basic-window")
                (:file "fragment-shader")
                (:file "particles-basic")
-               (:file "events")))
+               (:file "events")
+               (:file "icons")))

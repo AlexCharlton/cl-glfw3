@@ -18,10 +18,16 @@
    set-error-callback
    initialize
    with-init
-get-monitor-work-area
+    get-monitor-work-area
    def-monitor-callback
    *window*
     image
+    make-image
+    image-width
+    image-height
+    image-pixels
+    copy-image
+    image-p
    create-window
    destroy-window
    with-window
@@ -77,6 +83,8 @@ set-window-content-scale-callback
    get-cursor-position
    set-cursor-position
 create-cursor
+    with-cursor
+    with-standard-cursor
 set-cursor
    def-key-callback
    def-char-callback
@@ -93,6 +101,7 @@ set-char-mods-callback
    set-cursor-position-callback
    set-cursor-enter-callback
    set-scroll-callback
+    set-drop-callback
 def-joystick-callback
    set-clipboard-string
    get-clipboard-string
@@ -118,18 +127,16 @@ def-joystick-callback
     (alexandria:once-only (image)
       `(let ((,width (image-width ,image))
              (,height (image-height ,image)))
-         (cffi:with-foreign-objects ((,image-ptr '(:struct %glfw::image))
-                                     (,pixels :uchar (* ,width ,height 4)));4=rgba
-           (loop for col from 0 below ,height do
-                 (loop for row from 0 below ,width do
-                       (let ((address (+ row (* ,width col))))
-                         (setf (cffi:mem-aref ,pixels address)
-                               (aref (image-pixels ,image) address)))))
-           (setf (cffi:foreign-slot-value ,image-ptr '(:struct %glfw::image) '%glfw::width) ,width
-                 (cffi:foreign-slot-value ,image-ptr '(:struct %glfw::image) '%glfw::height) ,height
-                 (cffi:foreign-slot-value ,image-ptr '(:struct %glfw::image) '%glfw::pixels) ,pixels)
-           (let ((,image-var ,image-ptr))
-             ,@body))))))
+         (cffi:with-foreign-objects ((,image-ptr '(:struct %glfw::image)))
+           (cffi:with-foreign-pointer (,pixels (* ,width ,height 4));4=rgba
+             (loop for i from 0 below (* ,width ,height 4) do
+                   (setf (cffi:mem-ref ,pixels :uchar i)
+                         (aref (image-pixels ,image) i)))
+             (setf (cffi:foreign-slot-value ,image-ptr '(:struct %glfw::image) '%glfw::width) ,width
+                   (cffi:foreign-slot-value ,image-ptr '(:struct %glfw::image) '%glfw::height) ,height
+                   (cffi:foreign-slot-value ,image-ptr '(:struct %glfw::image) '%glfw::pixels) ,pixels)
+             (let ((,image-var ,image-ptr))
+               ,@body)))))))
 
 ;;;; ## Window and monitor functions
 (defmacro import-export (&rest symbols)
@@ -360,7 +367,7 @@ SHARED: The window whose context to share resources with."
 
 (defun set-window-icon (image &optional (window *window*))
   (cond ((null image) (%glfw:set-window-icon window 0 (cffi:null-pointer)))
-        (t (with-image-pointer (pointer image) (%glfw:set-window-icon window 0 pointer)))))
+        (t (with-image-pointer (pointer image) (%glfw:set-window-icon window 1 pointer)))))
 
 (defun restore-window (&optional (window *window*))
   (%glfw:restore-window window))
@@ -465,7 +472,7 @@ SHARED: The window whose context to share resources with."
   (%glfw:set-window-iconify-callback window (cffi:get-callback callback-name)))
 
 (defun set-window-maximize-callback (callback-name &optional (window *window*))
-  (%glfw:set-window-maximize-callback window callback-name))
+  (%glfw:set-window-maximize-callback window (cffi:get-callback callback-name)))
 
 (defun set-framebuffer-size-callback (callback-name &optional (window *window*))
   (%glfw:set-framebuffer-size-callback window (cffi:get-callback callback-name)))
@@ -508,6 +515,16 @@ SHARED: The window whose context to share resources with."
 (defun create-cursor (image xhot yhot)
   (cond ((null image) (%glfw:create-cursor (cffi:null-pointer) xhot yhot))
         (t (with-image-pointer (pointer image) (%glfw:create-cursor pointer xhot yhot)))))
+
+(defmacro with-cursor ((var image x y) &body body)
+  `(unwind-protect (let ((,var (create-cursor ,image ,x ,y)))
+                     ,@body)
+     (%glfw:destroy-cursor ,var)))
+
+(defmacro with-standard-cursor ((var shape) &body body)
+  `(unwind-protect (let ((,var (%glfw:create-standard-cursor ,shape)))
+                     ,@body)
+     (%glfw:destroy-cursor ,var)))
 
 (defun set-cursor (cursor &optional (window *window*))
   (%glfw:set-cursor window cursor))
@@ -557,7 +574,7 @@ SHARED: The window whose context to share resources with."
 ;;must: support function
 (defmacro def-drop-callback (name (window number-of-pathes pathes) &body body)
   `(%glfw:define-glfw-callback ,name
-     ((,window :pointer) (,number-of-pathes :int) (,pathes (:pointer (:pointer (:struct :char)))))
+     ((,window :pointer) (,number-of-pathes :int) (,pathes (:pointer (:pointer :string))))
      ,@body))
 
 (defmacro def-joystick-callback (name (joystick event) &body body)
@@ -585,6 +602,9 @@ SHARED: The window whose context to share resources with."
 
 (defun set-scroll-callback (callback-name &optional (window *window*))
   (%glfw:set-scroll-callback window (cffi:get-callback callback-name)))
+
+(defun set-drop-callback (callback-name)
+  (%glfw:set-drop-callback (cffi:get-callback callback-name)))
 
 (import-export %glfw:raw-mouse-motion-supported-p %glfw:get-key-name %glfw:get-key-scancode %glfw:destroy-cursor
                %glfw:create-standard-cursor

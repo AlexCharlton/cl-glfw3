@@ -7,6 +7,7 @@
 (defparameter *keys-pressed* nil)
 (defparameter *buttons-pressed* nil)
 (defparameter *window-size* nil)
+(defparameter *dropped-files* nil)
 
 (defun update-window-title (window)
   (set-window-title (format nil "size ~A | keys ~A | buttons ~A"
@@ -35,6 +36,23 @@
   (setf *window-size* (list w h))
   (update-window-title window))
 
+(def-window-iconify-callback iconify-callback (window minp)
+  (declare (ignore window))
+  (format t "~a~%" (if minp
+                       'min
+                       'not-min)))
+
+(def-window-maximize-callback maximize-callback (window maxp)
+  (declare (ignore window))
+  (format t "~a~%" (if maxp
+                       'max
+                       'not-max)))
+
+(def-drop-callback drop-print-callback (window num pathes)
+  (declare (ignore window pathes))
+  (pushnew num *dropped-files*)
+  (deletef *dropped-files* num))
+
 (defun events-example ()
   ;; Graphics calls on OS X must occur in the main thread
   (with-body-in-main-thread ()
@@ -42,6 +60,9 @@
       (set-key-callback 'key-callback)
       (set-mouse-button-callback 'mouse-callback)
       (set-window-size-callback 'window-size-callback)
+      (set-window-iconify-callback 'iconify-callback)
+      (set-window-maximize-callback 'maximize-callback)
+      (set-drop-callback 'drop-print-callback)
       (setf *window-size* (get-window-size))
       (update-window-title *window*)
       (loop until (window-should-close-p) do (wait-events)))))

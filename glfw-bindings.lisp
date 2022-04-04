@@ -41,7 +41,7 @@ init-hint ;added exported
    window-should-close-p
    set-window-should-close
    set-window-title
-   set-window-icon ;added exported
+   set-window-icon ;added exported tested
    get-window-opacity
    set-window-opacity
    get-window-position
@@ -70,7 +70,7 @@ init-hint ;added exported
    set-window-refresh-callback
    set-window-focus-callback
    set-window-iconify-callback
-   set-window-maximize-callback ;added exported
+   set-window-maximize-callback ;added exported tested
    set-framebuffer-size-callback
    set-window-content-scale-callback ;added exported
    set-window-monitor
@@ -88,10 +88,10 @@ init-hint ;added exported
    get-mouse-button
    get-cursor-position
    set-cursor-position
-   create-cursor ;added exported
-   create-standard-cursor ;added exported
-   destroy-cursor ;added exported
-   set-cursor ;added exported
+   create-cursor ;added exported tested
+   create-standard-cursor ;added exported tested
+   destroy-cursor ;added exported tested
+   set-cursor ;added exported tested
    set-key-callback
    set-char-callback
    set-char-mods-callback ;added exported
@@ -132,11 +132,6 @@ init-hint ;added exported
    get-instance-proc-address
    physical-device-presentation-support-p
    create-window-surface
-
-   ;;added
-   ;;window
-   ;;monitor
-   ;;input
  ))
 
 ;; internal stuff
@@ -887,7 +882,7 @@ Returns previously set callback."
   (window window) (iconify-fun :pointer))
 
 ;;added
-(defcfun ("glfwsetWindowMaximizeCallback" set-window-maximize-callback) :pointer
+(defcfun ("glfwSetWindowMaximizeCallback" set-window-maximize-callback) :pointer
   "MAXIMIZE-FUN is a callback of type 'void (* GLFWwindowmaximizefun)(GLFWwindow*,int)'.
   Returns previously set callback."
   (window window) (maximize-fun :pointer))
