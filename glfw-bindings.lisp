@@ -9,8 +9,8 @@
    ;;initialize
    init
    terminate
-init-hint ;added exported
-   get-version
+init-hint
+get-version
    get-version-string
    set-error-callback
    ;;monitor
@@ -21,8 +21,8 @@ init-hint ;added exported
    get-monitor-physical-size
    get-monitor-content-scale
    get-monitor-name
-   set-monitor-user-pointer ;added
-   get-monitor-user-pointer ;added
+   set-monitor-user-pointer
+   get-monitor-user-pointer
    set-monitor-callback
    get-video-modes
    get-video-mode
@@ -41,7 +41,7 @@ init-hint ;added exported
    window-should-close-p
    set-window-should-close
    set-window-title
-   set-window-icon ;added exported tested
+   set-window-icon
    get-window-position
    set-window-position
    get-window-size
@@ -49,21 +49,21 @@ init-hint ;added exported
    set-window-aspect-ratio
    set-window-size
    get-framebuffer-size
-   get-window-frame-size ;added exported
+   get-window-frame-size
    get-window-content-scale
    get-window-opacity
    set-window-opacity
    iconify-window
    restore-window
-   maximize-window ;added exported
+   maximize-window
    show-window
    hide-window
-   focus-window ;added exported
-   request-window-attention ;added exported
+   focus-window
+   request-window-attention
    get-window-monitor
    set-window-monitor
    get-window-attribute
-   set-window-attribute ;added
+   set-window-attribute
    set-window-user-pointer
    get-window-user-pointer
    set-window-position-callback
@@ -72,54 +72,54 @@ init-hint ;added exported
    set-window-refresh-callback
    set-window-focus-callback
    set-window-iconify-callback
-   set-window-maximize-callback ;added exported tested
+   set-window-maximize-callback
    set-framebuffer-size-callback
-   set-window-content-scale-callback ;added exported
+   set-window-content-scale-callback
    poll-events
    wait-events
-   wait-events-timeout ;added exported
+   wait-events-timeout
    post-empty-event
    ;;input
    get-input-mode
    set-input-mode
-   raw-mouse-motion-supported-p ;added exported
-   get-key-name ;added exported
-   get-key-scancode ;added exported
+   raw-mouse-motion-supported-p
+   get-key-name
+   get-key-scancode
    get-key
    get-mouse-button
    get-cursor-position
    set-cursor-position
-   create-cursor ;added exported tested
-   create-standard-cursor ;added exported tested
-   destroy-cursor ;added exported tested
-   set-cursor ;added exported tested
+   create-cursor
+   create-standard-cursor
+   destroy-cursor
+   set-cursor
    set-key-callback
    set-char-callback
-   set-char-mods-callback ;added exported
+   set-char-mods-callback
    set-mouse-button-callback
    set-cursor-position-callback
    set-cursor-enter-callback
    set-scroll-callback
-   set-drop-callback ;added exported
+   set-drop-callback
    joystick-present-p
    get-joystick-axes
    get-joystick-buttons
-   get-joystick-hats ;added exported
+   get-joystick-hats
    get-joystick-name
-   get-joystick-guid ;added exported
-   set-joystick-user-pointer ;added
-   get-joystick-user-pointer ;added
-   joystick-is-gamepad-p ;added exported
-   set-joystick-callback ;added exported
-   update-gamepad-mappings ;added exported
-   get-gamepad-name ;added exported
-   get-gamepad-state ;added exported
+   get-joystick-guid
+   set-joystick-user-pointer
+   get-joystick-user-pointer
+   joystick-is-gamepad-p
+   set-joystick-callback
+   update-gamepad-mappings
+   get-gamepad-name
+   get-gamepad-state
    set-clipboard-string
    get-clipboard-string
    get-time
    set-time
-   get-timer-value ;added exported
-   get-timer-frequency ;added exported
+   get-timer-value
+   get-timer-frequency
    ;;context
    make-context-current
    get-current-context

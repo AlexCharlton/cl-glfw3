@@ -84,8 +84,6 @@ set-window-content-scale-callback
    get-cursor-position
    set-cursor-position
 create-cursor
-    with-cursor
-    with-standard-cursor
 set-cursor
    def-key-callback
    def-char-callback
@@ -125,25 +123,6 @@ def-joystick-callback
   width
   height
   pixels)
-
-#|
-(defmacro with-image-pointer ((var image) &body body)
-  "Internal function"
-  (alexandria:with-gensyms (width height pixels image-ptr)
-    (alexandria:once-only (image)
-      `(let ((,width (image-width ,image))
-             (,height (image-height ,image)))
-         (cffi:with-foreign-pointer (,image-ptr ,(* 2 3));int*2+pointer=int*3=2*3 bytes
-           (cffi:with-foreign-pointer (,pixels (* 1 ,width ,height 4));4=rgba
-             (loop for i from 0 below (* ,width ,height 4) do
-                   (setf (cffi:mem-ref ,pixels :uchar i)
-                         (aref (image-pixels ,image) i)))
-             (setf (cffi:mem-ref ,image-ptr :int) ,width
-                   (cffi:mem-ref ,image-ptr :int 4) ,height
-                   (cffi:mem-ref ,image-ptr :pointer 8) ,pixels)
-             (let ((,var ,image-ptr))
-               ,@body)))))))
-|#
 
 (defmacro with-image-pointer ((var image) &body body)
   "Internal function. translate image object from lisp to C and bind pointer of C image object to var symbol"
@@ -545,16 +524,6 @@ SHARED: The window whose context to share resources with."
 (defun create-cursor (image xhot yhot)
   (cond ((null image) (%glfw:create-cursor (cffi:null-pointer) xhot yhot))
         (t (with-image-pointer (pointer image) (%glfw:create-cursor pointer xhot yhot)))))
-
-(defmacro with-cursor ((var image x y) &body body)
-  `(unwind-protect (let ((,var (create-cursor ,image ,x ,y)))
-                     ,@body)
-     (%glfw:destroy-cursor ,var)))
-
-(defmacro with-standard-cursor ((var shape) &body body)
-  `(unwind-protect (let ((,var (%glfw:create-standard-cursor ,shape)))
-                     ,@body)
-     (%glfw:destroy-cursor ,var)))
 
 (defun set-cursor (cursor &optional (window *window*))
   (%glfw:set-cursor window cursor))
