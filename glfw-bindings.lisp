@@ -144,9 +144,15 @@ init-hint ;added exported
                ; homebrew naming
                "libglfw3.3.dylib" "libglfw3.2.dylib" "libglfw3.1.dylib" "libglfw3.dylib"
                ; cmake build naming
-               "libglfw.3.3.dylib" "libglfw.3.2.dylib" "libglfw.3.1.dylib" "libglfw.3.dylib"))
-     (:unix (:or "libglfw.so.3.3" "libglfw.wo.3.2" "libglfw.so.3.1" "libglfw.so.3" "libglfw.so"))
-     (:windows "glfw3.dll")
+               "libglfw.3.3.dylib" "libglfw.3.2.dylib" "libglfw.3.1.dylib" "libglfw.3.dylib"
+               ;;glfw-blob
+               "libglfw.dylib.bodged"))
+     (:unix (:or "libglfw.so.3.3" "libglfw.wo.3.2" "libglfw.so.3.1" "libglfw.so.3" "libglfw.so"
+             ;;glfw-blob
+             "libglfw.so.bodged"))
+     (:windows (:or "glfw3.dll"
+                ;;glfw-blob
+                "libglfw.dll.bodged"))
      (t (:or (:default "libglfw3") (:default "libglfw"))))
 
 (use-foreign-library glfw)
