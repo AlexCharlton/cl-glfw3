@@ -57,6 +57,7 @@ focus-window
     request-window-attention
    get-window-monitor
    get-window-attribute
+    set-window-attribute
    get-context-version
    def-window-position-callback
    def-window-size-callback
@@ -428,6 +429,9 @@ SHARED: The window whose context to share resources with."
       (:context-release-behavior (cffi:foreign-enum-keyword '%glfw::release-behavior value))
       (:context-robustness (cffi:foreign-enum-keyword '%glfw::robustness value)))))
 
+(defun set-window-attribute (attribute value &optional (window *window*))
+  (%glfw:set-window-attribute window attribute value))
+
 (defun get-context-version (&optional (window *window*))
   "Convenience function returning (opengl-context-major-version opengl-context-minor-version opengl-context-revision)."
   (list (get-window-attribute :context-version-major window)
@@ -507,7 +511,7 @@ SHARED: The window whose context to share resources with."
   (%glfw:set-window-content-scale-callback window (cffi:get-callback callback-name)))
 
 ;;;; ## Events and input
-(import-export %glfw:poll-events %glfw:wait-events %glfw:wait-events-timeout %glfw:post-empty-event %glfw:set-window-attribute)
+(import-export %glfw:poll-events %glfw:wait-events %glfw:wait-events-timeout %glfw:post-empty-event)
 
 (defun get-input-mode (mode &optional (window *window*))
   "Mode is one of :CURSOR :STICKY-KEYS or :STICKY-MOUSE-BUTTONS."
