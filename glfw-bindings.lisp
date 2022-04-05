@@ -42,17 +42,17 @@ init-hint ;added exported
    set-window-should-close
    set-window-title
    set-window-icon ;added exported tested
-   get-window-opacity
-   set-window-opacity
    get-window-position
    set-window-position
    get-window-size
-   set-window-size
    set-window-size-limits
    set-window-aspect-ratio
+   set-window-size
+   get-framebuffer-size
    get-window-frame-size ;added exported
    get-window-content-scale
-   get-framebuffer-size
+   get-window-opacity
+   set-window-opacity
    iconify-window
    restore-window
    maximize-window ;added exported
@@ -61,7 +61,9 @@ init-hint ;added exported
    focus-window ;added exported
    request-window-attention ;added exported
    get-window-monitor
+   set-window-monitor
    get-window-attribute
+   set-window-attribute ;added
    set-window-user-pointer
    get-window-user-pointer
    set-window-position-callback
@@ -73,7 +75,6 @@ init-hint ;added exported
    set-window-maximize-callback ;added exported tested
    set-framebuffer-size-callback
    set-window-content-scale-callback ;added exported
-   set-window-monitor
    poll-events
    wait-events
    wait-events-timeout ;added exported
@@ -523,6 +524,14 @@ CFFI's defcallback that takes care of GLFW specifics."
   (:x11-instance-name #x00024002) ;added
   )
 
+;;window attributes for set-window-attributes
+(defcenum (window-attribute)
+  (:decorated #x00020005)
+  (:resizeable #x00020003)
+  (:floating #x00020007)
+  (:auto-iconify #x00020005)
+  (focus-on-show #x0002000c))
+
 ;; # for client-api hit
 (defcenum (opengl-api)
   (:no-api 0)
@@ -844,6 +853,9 @@ Returns previously set callback."
 
 (defcfun ("glfwGetWindowAttrib" get-window-attribute) :int
   (window window) (attribute window-hint))
+
+(defcfun ("glfwSetWindowAttrib" set-window-attribute) :void
+  (window window) (attrib window-attribute) (value :boolean))
 
 (defcfun ("glfwSetWindowUserPointer" set-window-user-pointer) :void
   (window window) (pointer :pointer))

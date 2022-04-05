@@ -118,22 +118,21 @@ def-joystick-callback
 ;;;; image
 (defstruct (image
              (:constructor make-image (width height
-                                             &aux (width width) (height height)
+                                             &aux
                                              (pixels (make-array (* 4 width height))))))
+  "Pixels is array of each color-bit and alpha-bit of image. each pixel has RGBA data, start form top-eft and arranged left-to-right, top-to-bottom."
   width
   height
   pixels)
 
+#|
 (defmacro with-image-pointer ((var image) &body body)
   "Internal function"
-  ;;マクロの準備
   (alexandria:with-gensyms (width height pixels image-ptr)
     (alexandria:once-only (image)
       `(let ((,width (image-width ,image))
              (,height (image-height ,image)))
-         ;;ポインタを取得し中身をalloc
          (cffi:with-foreign-pointer (,image-ptr ,(* 2 3));int*2+pointer=int*3=2*3 bytes
-           ;;中身を詰める
            (cffi:with-foreign-pointer (,pixels (* 1 ,width ,height 4));4=rgba
              (loop for i from 0 below (* ,width ,height 4) do
                    (setf (cffi:mem-ref ,pixels :uchar i)
@@ -141,11 +140,11 @@ def-joystick-callback
              (setf (cffi:mem-ref ,image-ptr :int) ,width
                    (cffi:mem-ref ,image-ptr :int 4) ,height
                    (cffi:mem-ref ,image-ptr :pointer 8) ,pixels)
-             ;;ポインタを変数に束縛しbody展開
              (let ((,var ,image-ptr))
                ,@body)))))))
+|#
 
-(defmacro with-image-array-pointer ((var image) &body body)
+(defmacro with-image-pointer ((var image) &body body)
   "Internal function. translate image object from lisp to C and bind pointer of C image object to var symbol"
   (alexandria:with-gensyms (width height pixels image-ptr)
     (alexandria:once-only (image)
@@ -391,7 +390,7 @@ SHARED: The window whose context to share resources with."
 
 (defun set-window-icon (image &optional (window *window*))
   (cond ((null image) (%glfw:set-window-icon window 0 (cffi:null-pointer)))
-        (t (with-image-array-pointer (pointer image)
+        (t (with-image-pointer (pointer image)
              (%glfw:set-window-icon window 1 pointer)))))
 
 (defun restore-window (&optional (window *window*))
@@ -420,11 +419,13 @@ SHARED: The window whose context to share resources with."
 (defun get-window-attribute (attribute &optional (window *window*))
   (let ((value (%glfw:get-window-attribute window attribute)))
     (ccase attribute
-      ((:focused :iconified :resizable :visible :decorated :opengl-forward-compat :opengl-debug-context)
+      ((:focused :iconified :maximized :hovered :visible :resizable :decorated :auto-iconify :floating :transparent-framebuffer :focus-on-show :opengl-forward-compat :opengl-debug-context :context-no-error)
        (cffi:convert-from-foreign value :boolean))
       (:client-api (cffi:foreign-enum-keyword '%glfw::opengl-api value))
+      (:context-creation-api (cffi:foreign-enum-keyword '%glfw::context-creation value))
       ((:context-version-major :context-version-minor :context-revision) value)
       (:opengl-profile (cffi:foreign-enum-keyword '%glfw::opengl-profile value))
+      (:context-release-behavior (cffi:foreign-enum-keyword '%glfw::release-behavior value))
       (:context-robustness (cffi:foreign-enum-keyword '%glfw::robustness value)))))
 
 (defun get-context-version (&optional (window *window*))
@@ -506,7 +507,7 @@ SHARED: The window whose context to share resources with."
   (%glfw:set-window-content-scale-callback window (cffi:get-callback callback-name)))
 
 ;;;; ## Events and input
-(import-export %glfw:poll-events %glfw:wait-events %glfw:wait-events-timeout %glfw:post-empty-event)
+(import-export %glfw:poll-events %glfw:wait-events %glfw:wait-events-timeout %glfw:post-empty-event %glfw:set-window-attribute)
 
 (defun get-input-mode (mode &optional (window *window*))
   "Mode is one of :CURSOR :STICKY-KEYS or :STICKY-MOUSE-BUTTONS."
