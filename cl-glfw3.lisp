@@ -21,13 +21,6 @@
     get-monitor-work-area
    def-monitor-callback
    *window*
-    image
-    make-image
-    image-width
-    image-height
-    image-pixels
-    copy-image
-    image-p
    create-window
    destroy-window
    with-window
@@ -114,32 +107,74 @@ def-joystick-callback
   (when (/= major 3)
     (error "Local GLFW is ~a.~a.~a, should be above 3.x" major minor rev)))
 
-;;;; image
-(defstruct (image
-             (:constructor make-image (width height
-                                             &aux
-                                             (pixels (make-array (* 4 width height))))))
-  "Pixels is array of each color-bit and alpha-bit of image. each pixel has RGBA data, start form top-eft and arranged left-to-right, top-to-bottom."
-  width
-  height
-  pixels)
+(defmacro with-image-pointer ((&rest bind*) &body body)
+  "Internal function"
+  (let ((gensym-pixels-vars (mapcar (lambda (x) (gensym (format nil "~a" x)))
+				    (mapcar #'first bind*)));マクロ中で使う変数sをリストにまとめて保管
+	(img-binding-list (gensym "IMG-BINDING-LIST")));画像の評価を束縛する変数
+    ;;画像の評価を1度だけにするため,letで束縛。上は束縛するための変数sをリストで保存している
+    `(let ((,img-binding-list (list ,@(mapcar (lambda (x)
+						(assert (typep x '(simple-array (unsigned-byte 8) (* * 4))))
+						(cadr x))
+					      bind*))))
+       ;;画像のピクセルデータの大きさの配列をallocしてgensym変数sに束縛
+       (destructuring-bind ,gensym-pixels-vars
+	 (mapcar (lambda (img-array)
+		   (cffi:foreign-alloc :unsigned-char :count (array-total-size img-array)))
+		 ,img-binding-list)
+	 (unwind-protect
+	   (progn
+	     ;;画像のピクセルデータの中身を詰める
+	     (mapc (lambda (img-array pixel-array-ptr)
+		     (let ((height (array-dimension img-array 0))
+			   (width (array-dimension img-array 1)))
+		       (loop for i from 0 below width do
+			     (loop for j from 0 below height do
+				   (loop for k from 0 below (array-dimension img-array 2) do
+					 (setf (cffi:mem-ref pixel-array-ptr :unsigned-char (+ k (* i 4)
+											       (* j (* width 4))))
+					       (aref img-array j i k)))))))
+		   ,img-binding-list
+		   (list ,@gensym-pixels-vars))
+	     ;;画像ストラクチャをallocしてbind*で示された変数に束縛
+	     (destructuring-bind ,(mapcar #'first bind*)
+	       (loop for i from 0 below ,(length bind*) collect (cffi:foreign-alloc :int :count 3))
+	       (unwind-protect
+		 (progn
+		   ;;画像ストラクチャに中身を詰める
+		   (mapc (lambda (img-structure-ptr image-array pixel-array-ptr)
+			   (setf (cffi:mem-ref img-structure-ptr :int) (array-dimension image-array 1);width
+				 (cffi:mem-ref img-structure-ptr :int 4) (array-dimension image-array 0);height
+				 (cffi:mem-ref img-structure-ptr :pointer 8) pixel-array-ptr))
+			  (list ,@(mapcar #'first bind*))
+			  ,img-binding-list
+			  (list ,@gensym-pixels-vars))
+		   ,@body)
+		 (mapc #'cffi:foreign-free (list ,@(mapcar #'first bind*))))))
+	     (mapc #'cffi:foreign-free (list ,@gensym-pixels-vars)))))))
 
+#|
 (defmacro with-image-pointer ((var image) &body body)
-  "Internal function. translate image object from lisp to C and bind pointer of C image object to var symbol"
+  "Internal function"
+  ;;マクロの準備
   (alexandria:with-gensyms (width height pixels image-ptr)
     (alexandria:once-only (image)
       `(let ((,width (image-width ,image))
              (,height (image-height ,image)))
-         (cffi:with-foreign-objects ((,image-ptr '(:struct %glfw::image)))
-           (cffi:with-foreign-pointer (,pixels (* ,width ,height 4));4=rgba
+         ;;ポインタを取得し中身をalloc
+         (cffi:with-foreign-pointer (,image-ptr ,(* 2 3));int*2+pointer=int*3=2*3 bytes
+           ;;中身を詰める
+           (cffi:with-foreign-pointer (,pixels (* 1 ,width ,height 4));4=rgba
              (loop for i from 0 below (* ,width ,height 4) do
                    (setf (cffi:mem-ref ,pixels :uchar i)
                          (aref (image-pixels ,image) i)))
-             (setf (cffi:foreign-slot-value ,image-ptr '(:struct %glfw::image) '%glfw::width) ,width
-                   (cffi:foreign-slot-value ,image-ptr '(:struct %glfw::image) '%glfw::height) ,height
-                   (cffi:foreign-slot-value ,image-ptr '(:struct %glfw::image) '%glfw::pixels) ,pixels)
+             (setf (cffi:mem-ref ,image-ptr :int) ,width
+                   (cffi:mem-ref ,image-ptr :int 4) ,height
+                   (cffi:mem-ref ,image-ptr :pointer 8) ,pixels)
+             ;;ポインタを変数に束縛しbody展開
              (let ((,var ,image-ptr))
                ,@body)))))))
+|#
 
 ;;;; ## Window and monitor functions
 (defmacro import-export (&rest symbols)
@@ -523,7 +558,7 @@ SHARED: The window whose context to share resources with."
 
 (defun create-cursor (image xhot yhot)
   (cond ((null image) (%glfw:create-cursor (cffi:null-pointer) xhot yhot))
-        (t (with-image-pointer (pointer image) (%glfw:create-cursor pointer xhot yhot)))))
+        (t (with-image-pointer ((pointer image)) (%glfw:create-cursor pointer xhot yhot)))))
 
 (defun set-cursor (cursor &optional (window *window*))
   (%glfw:set-cursor window cursor))
