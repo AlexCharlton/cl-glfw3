@@ -109,14 +109,17 @@ def-joystick-callback
 
 (defmacro with-image-pointer ((&rest bind*) &body body)
   "Internal function"
-  (let ((gensym-pixels-vars (mapcar (lambda (x) (gensym (format nil "~a" x)))
+  (let ((gensym-pixels-vars (mapcar (lambda (x)
+				      (gensym (format nil "~a" x)))
 				    (mapcar #'first bind*)));マクロ中で使う変数sをリストにまとめて保管
 	(img-binding-list (gensym "IMG-BINDING-LIST")));画像の評価を束縛する変数
     ;;画像の評価を1度だけにするため,letで束縛。上は束縛するための変数sをリストで保存している
     `(let ((,img-binding-list (list ,@(mapcar (lambda (x)
-						(assert (typep x '(simple-array (unsigned-byte 8) (* * 4))))
 						(cadr x))
 					      bind*))))
+       (mapc (lambda (img)
+	       (assert (typep img '(simple-array (unsigned-byte 8) (* * 4)))))
+	     ,img-binding-list)
        ;;画像のピクセルデータの大きさの配列をallocしてgensym変数sに束縛
        (destructuring-bind ,gensym-pixels-vars
 	 (mapcar (lambda (img-array)
@@ -405,8 +408,8 @@ SHARED: The window whose context to share resources with."
 
 (defun set-window-icon (image &optional (window *window*))
   (cond ((null image) (%glfw:set-window-icon window 0 (cffi:null-pointer)))
-        (t (with-image-pointer (pointer image)
-             (%glfw:set-window-icon window 1 pointer)))))
+	(t (with-image-pointer ((pointer image))
+	     (%glfw:set-window-icon window 1 pointer)))))
 
 (defun restore-window (&optional (window *window*))
   (%glfw:restore-window window))
