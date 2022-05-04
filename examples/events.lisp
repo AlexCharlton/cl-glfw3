@@ -7,7 +7,6 @@
 (defparameter *keys-pressed* nil)
 (defparameter *buttons-pressed* nil)
 (defparameter *window-size* nil)
-(defparameter *dropped-files* nil)
 
 (defun update-window-title (window)
   (set-window-title (format nil "size ~A | keys ~A | buttons ~A"
@@ -48,10 +47,24 @@
                        'max
                        'not-max)))
 
+#|
+(def-drop-callback drop-print-callback+ (window num pathes)
+  (declare (ignore window))
+  (format t "drop~%num:~a, pathes: ~a~%" num pathes)
+  (let ((p-list (loop for i from 0 below num collect
+		      (pathname (cffi:mem-aref pathes :string i)))))
+    (print p-list)))
+|#
+
 (def-drop-callback drop-print-callback (window num pathes)
-  (declare (ignore window pathes))
-  (pushnew num *dropped-files*)
-  (deletef *dropped-files* num))
+  (declare (ignore window))
+  (print num)
+  (print pathes))
+#|
+  (dotimes (i num)
+    (print i)
+    (print (cffi:mem-aref pathes :string i))))
+|#
 
 (defun events-example ()
   ;; Graphics calls on OS X must occur in the main thread

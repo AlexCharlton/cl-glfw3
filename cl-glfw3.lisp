@@ -610,8 +610,8 @@ SHARED: The window whose context to share resources with."
 ;;added
 ;;must: support function
 (defmacro def-drop-callback (name (window number-of-pathes pathes) &body body)
-  `(%glfw:define-glfw-callback ,name
-     ((,window :pointer) (,number-of-pathes :int) (,pathes (:pointer (:pointer :string))))
+  `(%glfw::define-glfw-drop-callback ,name
+     ((,window :pointer) (,number-of-pathes :int) (,pathes (:pointer :string)))
      ,@body))
 
 (defmacro def-joystick-callback (name (joystick event) &body body)
@@ -640,8 +640,8 @@ SHARED: The window whose context to share resources with."
 (defun set-scroll-callback (callback-name &optional (window *window*))
   (%glfw:set-scroll-callback window (cffi:get-callback callback-name)))
 
-(defun set-drop-callback (callback-name)
-  (%glfw:set-drop-callback (cffi:get-callback callback-name)))
+(defun set-drop-callback (callback-name &optional (window *window*))
+  (%glfw:set-drop-callback window (cffi:get-callback callback-name)))
 
 (import-export %glfw:raw-mouse-motion-supported-p %glfw:get-key-name %glfw:get-key-scancode %glfw:destroy-cursor
                %glfw:create-standard-cursor

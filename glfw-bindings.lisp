@@ -227,6 +227,25 @@ CFFI's defcallback that takes care of GLFW specifics."
        (with-float-traps-restored
          ,@actual-body))))
 
+(defmacro define-glfw-drop-callback (&whole whole name args &body body)
+  "Define a DROP callback.
+This macro trunslate pointer passed from glfw to list of pathname
+then call callback-function as lambda function."
+  (multiple-value-bind (actual-body decls doc)
+    (parse-body body :documentation t :whole whole)
+    `(defcallback ,name :void ,args
+       ,@(or doc)
+       (funcall (lambda ,(mapcar #'first args)
+		  ,@decls
+		  (with-float-traps-restored
+		    ,@actual-body))
+		,(first (first args)) ;;window
+		,(first (second args)) ;;counter
+		(loop :for i :from 0 :below ,(first (second args)) :collect           ;;pathes
+		      (pathname (cffi:mem-aref ,(first (third args)) :string i)))))))
+
+
+
 (defun c-array->list (array count &optional (type :pointer))
   (loop for i below count collect (mem-aref array type i)))
 
@@ -1022,7 +1041,7 @@ Returns previously set callback."
 (defcfun ("glfwSetDropCallback" set-drop-callback) :pointer
   "DROP-FUN is a callback of type 'void (* GLFWdropfun)(GLFWwindow*,int path_count,struct char** path_names)'.
 Returns previously set callback."
-  (DROP-FUN :pointer))
+  (window window) (DROP-FUN :pointer))
 
 ;;;; ### joystick
 (defcfun ("glfwJoystickPresent" joystick-present-p) :boolean
