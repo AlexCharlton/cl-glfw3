@@ -4,18 +4,18 @@
 
 (export '(basic-window-example))
 
-(def-key-callback quit-on-escape (window key scancode action mod-keys)
+(def-key-callback basic-quit-on-escape (window key scancode action mod-keys)
   (declare (ignore window scancode mod-keys))
   (when (and (eq key :escape) (eq action :press))
     (set-window-should-close)))
 
-(defun render ()
+(defun basic-render ()
   (gl:clear :color-buffer)
   (gl:with-pushed-matrix
     (gl:color 1 1 1)
     (gl:rect -25 -25 25 25)))
 
-(defun set-viewport (width height)
+(defun basic-set-viewport (width height)
   (gl:viewport 0 0 width height)
   (gl:matrix-mode :projection)
   (gl:load-identity)
@@ -23,20 +23,20 @@
   (gl:matrix-mode :modelview)
   (gl:load-identity))
 
-(def-window-size-callback update-viewport (window w h)
+(def-window-size-callback basic-update-viewport (window w h)
   (declare (ignore window))
-  (set-viewport w h))
+  (basic-set-viewport w h))
 
 (defun basic-window-example ()
   ;; Graphics calls on OS X must occur in the main thread
   (with-body-in-main-thread ()
     (with-init-window (:title "Window test" :width 600 :height 400)
       (setf %gl:*gl-get-proc-address* #'get-proc-address)
-      (set-key-callback 'quit-on-escape)
-      (set-window-size-callback 'update-viewport)
+      (set-key-callback 'basic-quit-on-escape)
+      (set-window-size-callback 'basic-update-viewport)
       (gl:clear-color 0 0 0 0)
       (set-viewport 600 400)
       (loop until (window-should-close-p)
-         do (render)
+         do (basic-render)
          do (swap-buffers)
          do (poll-events)))))
