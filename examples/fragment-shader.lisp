@@ -44,7 +44,7 @@ void main()
 
 (defvar *shader-time* 0)
 
-(defun render ()
+(defun shader-render ()
   (gl:clear :color-buffer)
 
   ;; Update our time variable in the shader
@@ -114,12 +114,12 @@ void main()
 ;; Standard window setup below this line
 ;; -------------------------------------
 
-(def-key-callback quit-on-escape (window key scancode action mod-keys)
+(def-key-callback shader-quit-on-escape (window key scancode action mod-keys)
   (declare (ignore window scancode mod-keys))
   (when (and (eq key :escape) (eq action :press))
     (set-window-should-close)))
 
-(defun set-viewport (width height)
+(defun shader-set-viewport (width height)
   ;; Black background
   (gl:clear-color 0.2 0.2 0.2 0.2)
 
@@ -137,25 +137,25 @@ void main()
   (gl:matrix-mode :modelview)
   (gl:load-identity))
 
-(def-window-size-callback update-viewport (window w h)
+(def-window-size-callback shader-update-viewport (window w h)
   (declare (ignore window))
-  (set-viewport w h))
+  (shader-set-viewport w h))
 
 (defun fragment-shader-example ()
   ;; Graphics calls on OS X must occur in the main thread
   (with-body-in-main-thread ()
     (with-init-window (:title "OpenGL test" :width 600 :height 400)
-      (set-key-callback 'quit-on-escape)
+      (set-key-callback 'shader-quit-on-escape)
 
       ;; Callback for window resize events
-      (set-window-size-callback 'update-viewport)
-      (set-viewport 800 400)
+      (set-window-size-callback 'shader-update-viewport)
+      (shader-set-viewport 800 400)
 
       ;; Compile our shaders and use the program
       (setup-shader)
 
       ;; Our render-loop
       (loop until (window-should-close-p)
-            do (render)
+            do (shader-render)
             do (swap-buffers)
             do (poll-events)))))

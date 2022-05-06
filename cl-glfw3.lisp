@@ -18,15 +18,18 @@
    set-error-callback
    initialize
    with-init
+    get-monitor-work-area
    def-monitor-callback
    *window*
+   window-hint
    create-window
    destroy-window
-   with-window
+   with-windows
    with-init-window
    window-should-close-p
    set-window-should-close
    set-window-title
+   set-window-icon
    get-window-opacity
    set-window-opacity
    get-window-position
@@ -35,15 +38,20 @@
    set-window-size
    set-window-size-limits
    set-window-aspect-ratio
+   get-window-frame-size
    set-window-monitor
    get-window-content-scale
    get-framebuffer-size
    iconify-window
    restore-window
+    maximize-window
    show-window
    hide-window
+focus-window
+    request-window-attention
    get-window-monitor
    get-window-attribute
+    set-window-attribute
    get-context-version
    def-window-position-callback
    def-window-size-callback
@@ -51,32 +59,43 @@
    def-window-refresh-callback
    def-window-focus-callback
    def-window-iconify-callback
+def-window-maximize-callback
    def-framebuffer-size-callback
+def-window-content-scale-callback
    set-window-position-callback
    set-window-size-callback
    set-window-close-callback
    set-window-refresh-callback
    set-window-focus-callback
    set-window-iconify-callback
+set-window-maximize-callback
    set-framebuffer-size-callback
+set-window-content-scale-callback
    get-input-mode
    set-input-mode
    get-key
    get-mouse-button
    get-cursor-position
    set-cursor-position
+create-cursor
+set-cursor
    def-key-callback
    def-char-callback
+def-char-mods-callback
    def-mouse-button-callback
    def-cursor-pos-callback
    def-cursor-enter-callback
    def-scroll-callback
+    def-drop-callback
    set-key-callback
    set-char-callback
+set-char-mods-callback
    set-mouse-button-callback
    set-cursor-position-callback
    set-cursor-enter-callback
    set-scroll-callback
+    set-drop-callback
+def-joystick-callback
    set-clipboard-string
    get-clipboard-string
    make-context-current
@@ -88,6 +107,78 @@
 (multiple-value-bind (major minor rev) (%glfw:get-version)
   (when (/= major 3)
     (error "Local GLFW is ~a.~a.~a, should be above 3.x" major minor rev)))
+
+(defmacro with-image-pointer ((&rest bind*) &body body)
+  "Internal function"
+  (let ((gensym-pixels-vars (mapcar (lambda (x)
+				      (gensym (format nil "~a" x)))
+				    (mapcar #'first bind*)));マクロ中で使う変数sをリストにまとめて保管
+	(img-binding-list (gensym "IMG-BINDING-LIST")));画像の評価を束縛する変数
+    ;;画像の評価を1度だけにするため,letで束縛。上は束縛するための変数sをリストで保存している
+    `(let ((,img-binding-list (list ,@(mapcar (lambda (x)
+						(cadr x))
+					      bind*))))
+       (mapc (lambda (img)
+	       (assert (typep img '(simple-array (unsigned-byte 8) (* * 4)))))
+	     ,img-binding-list)
+       ;;画像のピクセルデータの大きさの配列をallocしてgensym変数sに束縛
+       (destructuring-bind ,gensym-pixels-vars
+	 (mapcar (lambda (img-array)
+		   (cffi:foreign-alloc :unsigned-char :count (array-total-size img-array)))
+		 ,img-binding-list)
+	 (unwind-protect
+	   (progn
+	     ;;画像のピクセルデータの中身を詰める
+	     (mapc (lambda (img-array pixel-array-ptr)
+		     (let ((height (array-dimension img-array 0))
+			   (width (array-dimension img-array 1)))
+		       (loop for i from 0 below width do
+			     (loop for j from 0 below height do
+				   (loop for k from 0 below (array-dimension img-array 2) do
+					 (setf (cffi:mem-ref pixel-array-ptr :unsigned-char (+ k (* i 4)
+											       (* j (* width 4))))
+					       (aref img-array j i k)))))))
+		   ,img-binding-list
+		   (list ,@gensym-pixels-vars))
+	     ;;画像ストラクチャをallocしてbind*で示された変数に束縛
+	     (destructuring-bind ,(mapcar #'first bind*)
+	       (loop for i from 0 below ,(length bind*) collect (cffi:foreign-alloc :int :count 3))
+	       (unwind-protect
+		 (progn
+		   ;;画像ストラクチャに中身を詰める
+		   (mapc (lambda (img-structure-ptr image-array pixel-array-ptr)
+			   (setf (cffi:mem-ref img-structure-ptr :int) (array-dimension image-array 1);width
+				 (cffi:mem-ref img-structure-ptr :int 4) (array-dimension image-array 0);height
+				 (cffi:mem-ref img-structure-ptr :pointer 8) pixel-array-ptr))
+			  (list ,@(mapcar #'first bind*))
+			  ,img-binding-list
+			  (list ,@gensym-pixels-vars))
+		   ,@body)
+		 (mapc #'cffi:foreign-free (list ,@(mapcar #'first bind*))))))
+	     (mapc #'cffi:foreign-free (list ,@gensym-pixels-vars)))))))
+
+#|
+(defmacro with-image-pointer ((var image) &body body)
+  "Internal function"
+  ;;マクロの準備
+  (alexandria:with-gensyms (width height pixels image-ptr)
+    (alexandria:once-only (image)
+      `(let ((,width (image-width ,image))
+             (,height (image-height ,image)))
+         ;;ポインタを取得し中身をalloc
+         (cffi:with-foreign-pointer (,image-ptr ,(* 2 3));int*2+pointer=int*3=2*3 bytes
+           ;;中身を詰める
+           (cffi:with-foreign-pointer (,pixels (* 1 ,width ,height 4));4=rgba
+             (loop for i from 0 below (* ,width ,height 4) do
+                   (setf (cffi:mem-ref ,pixels :uchar i)
+                         (aref (image-pixels ,image) i)))
+             (setf (cffi:mem-ref ,image-ptr :int) ,width
+                   (cffi:mem-ref ,image-ptr :int 4) ,height
+                   (cffi:mem-ref ,image-ptr :pointer 8) ,pixels)
+             ;;ポインタを変数に束縛しbody展開
+             (let ((,var ,image-ptr))
+               ,@body)))))))
+|#
 
 ;;;; ## Window and monitor functions
 (defmacro import-export (&rest symbols)
@@ -108,42 +199,169 @@
 (defun set-error-callback (callback-name)
   (%glfw:set-error-callback (cffi:get-callback callback-name)))
 
-(defun initialize ()
+(defun initialize (&key (joystick-hat-buttons t)
+                        (cocoa-chdid-resources t)
+                        (cocoa-menubar t))
   "Start GLFW"
+  (%glfw:init-hint :joystick-hat-buttons joystick-hat-buttons)
+  (%glfw:init-hint :cocoa-chdid-resources cocoa-chdid-resources)
+  (%glfw:init-hint :cocoa-menubar cocoa-menubar)
   (let ((result (%glfw:init)))
     (unless result
       (error "Error initializing glfw."))
     result))
 
-(defmacro with-init (&body body)
+(defmacro with-init ((&rest init-keys) &body body)
   "Wrap BODY with an initialized GLFW instance, ensuring proper termination. If no error callback is set when this is called, a default error callback is set."
   `(progn
      (let ((prev-error-fun (set-error-callback 'default-error-fun)))
        (unless (cffi:null-pointer-p prev-error-fun)
 	 (%glfw:set-error-callback prev-error-fun)))
-     (initialize)
+     (initialize ,@init-keys)
      (unwind-protect (progn ,@body)
        (%glfw:terminate))))
 
-(import-export %glfw:get-monitors %glfw:get-primary-monitor %glfw:get-monitor-position %glfw:get-monitor-work-area %glfw:get-monitor-physical-size %glfw:get-monitor-content-scale %glfw:get-monitor-name %glfw:set-monitor-callback %glfw:get-video-modes %glfw:get-video-mode %glfw:set-gamma %glfw:get-gamma-ramp %glfw:set-gamma-ramp %glfw:terminate)
+(import-export %glfw:default-window-hints %glfw:get-monitors %glfw:get-primary-monitor %glfw:get-monitor-position
+	       %glfw:get-monitor-workarea %glfw:get-monitor-physical-size %glfw:get-monitor-content-scale
+	       %glfw:get-monitor-name %glfw:set-monitor-callback %glfw:get-video-modes %glfw:get-video-mode
+	       %glfw:set-gamma %glfw:get-gamma-ramp %glfw:set-gamma-ramp %glfw:terminate)
+
+(defun get-monitor-work-area (monitor)
+  "Inconsistent name of get-monitor-workarea. old-version used this name"
+  (warn "get-monitor-work-area is inconsistent name of foreign function.~% get-monitor-workarea is recommended")
+  (%glfw:get-monitor-workarea monitor))
 
 (defmacro def-monitor-callback (name (monitor event) &body body)
   `(%glfw:define-glfw-callback ,name
-       ((,monitor :pointer) (,event %glfw::monitor-event))
+       ((,monitor :pointer) (,event %glfw::connection-event))
      ,@body))
 
 (defvar *window* nil
   "The window that is currently the default for this library. Can be set through MAKE-CONTEXT-CURRENT.")
 
+(deftype window-hint-boolean-input ()
+  '(member :resizable :visible :decorated :focused :auto-iconify :floating :maximized
+	   :center-cursor :transparent-framebuffer focus-on-show scale-to-monitor
+	   :stereo :srgb-capable :double-buffer :opengl-forward-compat :opengl-debug-context
+	   :cocoa-retina-framebuffer :graphics-switching))
+(deftype window-hint-integer-input ()
+  '(member :red-bits :green-bits :blue-bits :alpha-bits :depth-bits :stencil-bits
+	   :accum-red-bits :accum-green-bits :accum-blue-bits :accum-alpha-bits
+	   :aux-buffers :samples :refresh-rate))
+(deftype window-hint-string-input ()
+  '(member :cocoa-frame-name :x11-class-name :x11-instance-name))
+(deftype window-hint-other-input ()
+  '(member :context-version-major :context-version-minor
+	   :client-api
+	   :context-creation-api
+	   :context-robustness
+	   :context-release-behavior
+	   :opengl-profile))
+
+(defun window-hint-default (target)
+  (ecase target
+    ((:resizable :visible :decorated :focused :auto-iconify :center-cursor :focus-on-show
+		:doublebuffer :cocoa-retina-framebuffer) t)
+    ((:floating :maximized :transparent-framebuffer :scale-to-monitor :stereo :srgb-capable
+	       :opengl-forward-compat :opengl-debug-context :cocoa-graphics-switching) nil)
+    ((:red-bits :green-bits :blue-bits :alpha-bits :stencil-bits) 8)
+    (:depth-bits 24)
+    ((:accum-red-bits :accum-green-bits :accum-blue-bits :accum-alpha-bits :aux-buffers
+		      :samples :context-version-minor) 0)
+    ((:refresh-rate) :dont-care)
+    (:client-api :opengl-api)
+    (:context-creation-api :native-context-api)
+    (:context-version-major 1) 
+    (:context-robustness :no-robustness)
+    (:context-release-behavior :any-release-behavior)
+    (:opengl-profile :opengl-any-profile)
+    ((:cocoa-frame-name :x11-class-name :x11-instance-name) "")))
+
+(defun window-hint (target value)
+  (when (eq value :default) (setf value (window-hint-default target)))
+  (typecase target
+    (window-hint-boolean-input
+      (%glfw:window-hint target
+			 (cffi:convert-to-foreign (the boolean value)
+						  :boolean)))
+    (window-hint-integer-input
+      (%glfw:window-hint target
+			 (if (eq :dont-care value)
+			   (cffi:convert-to-foreign -1
+						    :int)
+			   (cffi:convert-to-foreign (the (integer 0) value)
+						    :int))))
+    (window-hint-string-input
+      (%glfw:window-hint-string target
+				(cffi:convert-to-foreign (the string value)
+							 :string)))
+    (window-hint-other-input
+      (%glfw:window-hint target
+			 (cffi:convert-to-foreign value
+						  (case (the window-hint-other-input target)
+						    (:client-api '%glfw::opengl-api)
+						    (:context-creation-api '%glfw::context-creation)
+						    (:context-robustness '%glfw::robustness)
+						    (:context-release-behavior '%glfw::release-behavior)
+						    (:opengl-profile '%glfw::opengl-profile)
+						    ((:context-version-major :context-version-minor) :int)))))
+    (t (error "~a is not supported for window hint." target)))
+  value)
+
+(defmacro create-window (&rest init-bindings
+				&key (width 0) (height 0) (title "")
+				(monitor (cffi:null-pointer)) (shared (cffi:null-pointer))
+				resizable visible decorated focused auto-iconify floating
+				maximized center-cursor transparent-framebuffer focus-on-show scale-to-monitor
+				red-bits green-bits blue-bits alpha-bits depth-bits stencil-bits
+				accum-red-bits accum-green-bits accum-blue-bits accum-alpha-bits aux-buffers
+				samples refresh-rate stereo srgb-capable doublebuffer client-api
+				context-creation-api context-version-major context-version-minor
+				context-robustness context-release-behavior opengl-forward-compat
+				opengl-debug-context opengl-profile
+				cocoa-retina-framebuffer cocoa-frame-name cocoa-graphics-switching
+				x11-class-name x11-instance-name)
+  (declare (ignorable
+	     monitor shared
+	     resizable visible decorated focused auto-iconify floating
+	     maximized center-cursor transparent-framebuffer focus-on-show scale-to-monitor
+	     red-bits green-bits blue-bits alpha-bits depth-bits stencil-bits
+	     accum-red-bits accum-green-bits accum-blue-bits accum-alpha-bits aux-buffers
+	     samples refresh-rate stereo srgb-capable doublebuffer client-api
+	     context-creation-api context-version-major context-version-minor
+	     context-robustness context-release-behavior opengl-forward-compat
+	     opengl-debug-context opengl-profile
+	     cocoa-retina-framebuffer cocoa-frame-name cocoa-graphics-switching
+	     x11-class-name x11-instance-name))
+  `(progn
+     ,@(loop :for (target value) :on init-bindings :by #'cddr
+	     :unless (member target '(:width :height :title :monitor :shared))
+	     :collect `(window-hint ,(intern (string-upcase (symbol-name target)) :keyword)
+				    ,value))
+     (let ((win (%glfw:create-window ,width ,height ,title
+				     ,monitor ,shared)))
+       (when (cffi:null-pointer-p win)
+	 (error "Error: Can't create window."))
+       win)))
+
+#|
 (defun create-window (&key
 			(width 0) (height 0)
-			title
+			(title "")
 			(monitor (cffi:null-pointer))
 			(shared (cffi:null-pointer))
 			;; Hints
 			(resizable t)
 			(visible t)
 			(decorated t)
+                        (focused t)
+                        (auto-iconify t)
+                        (floating nil)
+                        (maximized nil)
+                        (center-cursor t)
+                        (transparent-framebuffer nil)
+                        (focus-on-show t)
+                        (scale-to-monitor nil)
 			(red-bits 8) (green-bits 8) (blue-bits 8) (alpha-bits 8)
 			(depth-bits 24) (stencil-bits 8)
 			(accum-red-bits 0) (accum-green-bits 0) (accum-blue-bits 0)
@@ -153,56 +371,89 @@
 			(refresh-rate 0)
 			(stereo nil)
 			(srgb-capable nil)
+                        (doublebuffer t)
 			(client-api :opengl-api)
+                        (context-creation-api :native-context-api)
 			(context-version-major 1)
 			(context-version-minor 0)
 			(context-robustness :no-robustness)
+                        (context-release-behavior :any-release-behavior)
 			(opengl-forward-compat nil)
 			(opengl-debug-context nil)
-			(opengl-profile :opengl-any-profile))
+			(opengl-profile :opengl-any-profile)
+                        (cocoa-retina-framebuffer t)
+                        (cocoa-frame-name "")
+                        (cocoa-graphics-switching nil)
+                        (x11-class-name "")
+                        (x11-instance-name "")
+                        )
   "This function handles all window hints.
 
 MONITOR: The monitor on which the window should be full-screen.
 SHARED: The window whose context to share resources with."
   (macrolet ((output-hints (&rest hints)
-	       `(progn
-		  ,@(loop for (name type) in hints collect
-			 `(%glfw:window-hint
-			   ,(intern (string-upcase
-				    (symbol-name name)) :keyword)
-			   (cffi:convert-to-foreign ,name ,type))))))
-    (output-hints
-     (resizable :boolean)
-     (visible :boolean)
-     (decorated :boolean)
-     (red-bits :int) (green-bits :int) (blue-bits :int) (alpha-bits :int)
-     (depth-bits :int) (stencil-bits :int)
-     (accum-red-bits :int) (accum-green-bits :int) (accum-blue-bits :int)
-     (accum-alpha-bits :int)
-     (aux-buffers :int)
-     (samples :int)
-     (refresh-rate :int)
-     (stereo :boolean)
-     (srgb-capable :boolean)
-     (client-api '%glfw::opengl-api)
-     (context-version-major :int)
-     (context-version-minor :int)
-     (context-robustness '%glfw::robustness)
-     (opengl-forward-compat :boolean)
-     (opengl-debug-context :boolean)
-     (opengl-profile '%glfw::opengl-profile)))
+               (flet ((stringhint-p (hintname)
+                         (member hintname '(cocoa-frame-name x11-class-name x11-instance-name))))
+                 `(progn
+                    ,@(loop for (name type) in hints collect
+                            `(,(if (stringhint-p (intern (string-upcase
+                                                           (symbol-name name))))
+                                   '%glfw:window-hint-string
+                                   '%glfw:window-hint)
+                               ,(intern (string-upcase
+                                         (symbol-name name)) :keyword)
+                               (cffi:convert-to-foreign ,name ,type)))))))
+      (output-hints
+        (resizable :boolean)
+        (visible :boolean)
+        (decorated :boolean)
+        (focused :boolean)
+        (auto-iconify :boolean)
+        (floating :boolean)
+        (maximized :boolean)
+        (center-cursor :boolean)
+        (transparent-framebuffer :boolean)
+        (focus-on-show :boolean)
+        (scale-to-monitor :boolean)
+        (red-bits :int) (green-bits :int) (blue-bits :int) (alpha-bits :int)
+        (depth-bits :int) (stencil-bits :int)
+        (accum-red-bits :int) (accum-green-bits :int) (accum-blue-bits :int)
+        (accum-alpha-bits :int)
+        (aux-buffers :int)
+        (samples :int)
+        (refresh-rate :int)
+        (stereo :boolean)
+        (srgb-capable :boolean)
+        (doublebuffer :boolean)
+        (client-api '%glfw::opengl-api)
+        (context-creation-api '%glfw::context-creation)
+        (context-version-major :int)
+        (context-version-minor :int)
+        (context-robustness '%glfw::robustness)
+        (context-release-behavior '%glfw::release-behavior)
+        (opengl-forward-compat :boolean)
+        (opengl-debug-context :boolean)
+        (opengl-profile '%glfw::opengl-profile)
+        (cocoa-retina-framebuffer :boolean)
+        (cocoa-frame-name :string)
+        (cocoa-graphics-switching :boolean)
+        (x11-class-name :string)
+        (x11-instance-name :string)
+        ))
   (let ((window (%glfw:create-window width height title monitor shared)))
     (if (cffi:null-pointer-p window)
-	(error "Error creating window.")
-	(if (eq client-api :no-api)
+        (error "Error creating window.")
+        (if (eq client-api :no-api)
             (setf *window* window)
             (make-context-current window)))))
+|#
 
 (defun destroy-window (&optional (window *window*))
   (when window (%glfw:destroy-window window))
   (when (eq window *window*)
     (setf *window* nil)))
 
+#|
 (defmacro with-window ((&rest window-keys) &body body)
   "Convenience macro for using windows."
   `(unwind-protect
@@ -210,11 +461,25 @@ SHARED: The window whose context to share resources with."
 	  (create-window ,@window-keys)
 	  ,@body)
      (destroy-window)))
+|#
+
+(defmacro with-windows ((&rest bindings) &body body)
+  "make windows (with-windows ((w0 ~~hints~~) (w1 ~~hints~~)) body)"
+  `(destructuring-bind ,(mapcar #'first bindings)
+     (list ,@(mapcar (lambda (bind)
+		       `(create-window ,@bind))
+		     (mapcar #'cdr bindings)))
+     (unwind-protect
+       (progn ,@body)
+       (progn ,@(mapcar (lambda (window)
+			  `(destroy-window ,window))
+			(mapcar #'car bindings))))))
+
 
 (defmacro with-init-window ((&rest window-keys) &body body)
   "Convenience macro for setting up GLFW and opening a window."
-  `(with-init
-     (with-window ,window-keys ,@body)))
+  `(with-init ()
+     (with-windows ((*window* ,@window-keys)) ,@body)))
 
 (defun window-should-close-p (&optional (window *window*))
   (%glfw:window-should-close-p window))
@@ -249,6 +514,9 @@ SHARED: The window whose context to share resources with."
 (defun set-window-aspect-ratio (width height &optional (window *window*))
   (%glfw:set-window-aspect-ratio window width height))
 
+(defun get-window-frame-size (&optional (window *window*))
+  (%glfw:get-window-frame-size window))
+
 (defun get-window-content-scale (&optional (window *window*))
   (%glfw:get-window-content-scale window))
 
@@ -264,14 +532,28 @@ SHARED: The window whose context to share resources with."
 (defun iconify-window (&optional (window *window*))
   (%glfw:iconify-window window))
 
+(defun set-window-icon (image &optional (window *window*))
+  (cond ((null image) (%glfw:set-window-icon window 0 (cffi:null-pointer)))
+	(t (with-image-pointer ((pointer image))
+	     (%glfw:set-window-icon window 1 pointer)))))
+
 (defun restore-window (&optional (window *window*))
   (%glfw:restore-window window))
+
+(defun maximize-window (&optional (window *window*))
+  (%glfw:maximize-window window))
 
 (defun show-window (&optional (window *window*))
   (%glfw:show-window window))
 
 (defun hide-window (&optional (window *window*))
   (%glfw:hide-window window))
+
+(defun focus-window (&optional (window *window*))
+  (%glfw:focus-window window))
+
+(defun request-window-attention (&optional (window *window*))
+  (%glfw:request-window-attention window))
 
 (defun get-window-monitor (&optional (window *window*))
   (let ((monitor (%glfw:get-window-monitor window)))
@@ -281,12 +563,17 @@ SHARED: The window whose context to share resources with."
 (defun get-window-attribute (attribute &optional (window *window*))
   (let ((value (%glfw:get-window-attribute window attribute)))
     (ccase attribute
-      ((:focused :iconified :resizable :visible :decorated :opengl-forward-compat :opengl-debug-context)
+      ((:focused :iconified :maximized :hovered :visible :resizable :decorated :auto-iconify :floating :transparent-framebuffer :focus-on-show :opengl-forward-compat :opengl-debug-context :context-no-error)
        (cffi:convert-from-foreign value :boolean))
       (:client-api (cffi:foreign-enum-keyword '%glfw::opengl-api value))
+      (:context-creation-api (cffi:foreign-enum-keyword '%glfw::context-creation value))
       ((:context-version-major :context-version-minor :context-revision) value)
       (:opengl-profile (cffi:foreign-enum-keyword '%glfw::opengl-profile value))
+      (:context-release-behavior (cffi:foreign-enum-keyword '%glfw::release-behavior value))
       (:context-robustness (cffi:foreign-enum-keyword '%glfw::robustness value)))))
+
+(defun set-window-attribute (attribute value &optional (window *window*))
+  (%glfw:set-window-attribute window attribute value))
 
 (defun get-context-version (&optional (window *window*))
   "Convenience function returning (opengl-context-major-version opengl-context-minor-version opengl-context-revision)."
@@ -324,9 +611,19 @@ SHARED: The window whose context to share resources with."
        ((,window :pointer) (,iconifiedp :boolean))
      ,@body))
 
+(defmacro def-window-maximize-callback (name (window maximizedp) &body body)
+  `(%glfw:define-glfw-callback ,name
+     ((,window :pointer) (,maximizedp :boolean))
+     ,@body))
+
 (defmacro def-framebuffer-size-callback (name (window w h) &body body)
   `(%glfw:define-glfw-callback ,name
        ((,window :pointer) (,w :int) (,h :int))
+     ,@body))
+
+(defmacro def-window-content-scale-callback (name (window xscale yscale) &body body)
+  `(%glfw:define-glfw-callback ,name
+     ((,window :pointer) (,xscale :float) (,yscale ,:float))
      ,@body))
 
 (defun set-window-position-callback (callback-name &optional (window *window*))
@@ -347,11 +644,17 @@ SHARED: The window whose context to share resources with."
 (defun set-window-iconify-callback (callback-name &optional (window *window*))
   (%glfw:set-window-iconify-callback window (cffi:get-callback callback-name)))
 
+(defun set-window-maximize-callback (callback-name &optional (window *window*))
+  (%glfw:set-window-maximize-callback window (cffi:get-callback callback-name)))
+
 (defun set-framebuffer-size-callback (callback-name &optional (window *window*))
   (%glfw:set-framebuffer-size-callback window (cffi:get-callback callback-name)))
 
+(defun set-window-content-scale-callback (callback-name &optional (window *window*))
+  (%glfw:set-window-content-scale-callback window (cffi:get-callback callback-name)))
+
 ;;;; ## Events and input
-(import-export %glfw:poll-events %glfw:wait-events %glfw:post-empty-event)
+(import-export %glfw:poll-events %glfw:wait-events %glfw:wait-events-timeout %glfw:post-empty-event)
 
 (defun get-input-mode (mode &optional (window *window*))
   "Mode is one of :CURSOR :STICKY-KEYS or :STICKY-MOUSE-BUTTONS."
@@ -382,6 +685,15 @@ SHARED: The window whose context to share resources with."
 (defun set-cursor-position (x y &optional (window *window*))
   (%glfw:set-cursor-position window x y))
 
+(defun create-cursor (image xhot yhot)
+  (with-image-pointer ((pointer image)) (%glfw:create-cursor pointer xhot yhot)))
+
+(defun set-cursor (cursor &optional (window *window*))
+  (%glfw:set-cursor window
+		    (if (null cursor)
+		      (cffi:null-pointer)
+		      cursor)))
+
 (defmacro def-key-callback (name (window key scancode action mod-keys) &body body)
   `(%glfw:define-glfw-callback ,name
        ((,window :pointer) (,key %glfw::key) (,scancode :int)
@@ -394,6 +706,13 @@ SHARED: The window whose context to share resources with."
 	((,window :pointer) (,char-code :unsigned-int))
       (let ((,char (code-char ,char-code)))
 	,@body))))
+
+(defmacro def-char-mods-callback (name (window char mod-keys) &body body)
+  (let ((char-code (gensym "char")))
+    `(%glfw:define-glfw-callback ,name
+       ((,window :pointer) (,char-code :unsigned-int) (,mod-keys %glfw::mod-keys))
+       (let ((,char (code-char ,char-code)))
+         ,@body))))
 
 (defmacro def-mouse-button-callback (name (window button action mod-keys) &body body)
   `(%glfw:define-glfw-callback ,name
@@ -416,11 +735,25 @@ SHARED: The window whose context to share resources with."
        ((,window :pointer) (,x :double) (,y :double))
      ,@body))
 
+;;must: support function
+(defmacro def-drop-callback (name (window number-of-pathes pathes) &body body)
+  `(%glfw::define-glfw-drop-callback ,name
+     ((,window :pointer) (,number-of-pathes :int) (,pathes (:pointer :string)))
+     ,@body))
+
+(defmacro def-joystick-callback (name (joystick event) &body body)
+  `(%glfw:define-glfw-callback ,name
+     ((,joystick int) (,event %glfw::connection-event))
+     ,@body))
+
 (defun set-key-callback (callback-name &optional (window *window*))
   (%glfw:set-key-callback window (cffi:get-callback callback-name)))
 
 (defun set-char-callback (callback-name &optional (window *window*))
   (%glfw:set-char-callback window (cffi:get-callback callback-name)))
+
+(defun set-char-mods-callback (callback-name &optional (window *window*))
+  (%glfw:set-char-mods-callback window (cffi:get-callback callback-name)))
 
 (defun set-mouse-button-callback (callback-name &optional (window *window*))
   (%glfw:set-mouse-button-callback window (cffi:get-callback callback-name)))
@@ -434,7 +767,16 @@ SHARED: The window whose context to share resources with."
 (defun set-scroll-callback (callback-name &optional (window *window*))
   (%glfw:set-scroll-callback window (cffi:get-callback callback-name)))
 
-(import-export %glfw:joystick-present-p %glfw:get-joystick-axes %glfw:get-joystick-buttons %glfw:get-joystick-name)
+(defun set-drop-callback (callback-name &optional (window *window*))
+  (%glfw:set-drop-callback window (cffi:get-callback callback-name)))
+
+(import-export %glfw:raw-mouse-motion-supported-p %glfw:get-key-name %glfw:get-key-scancode %glfw:destroy-cursor
+               %glfw:create-standard-cursor
+               %glfw:joystick-present-p %glfw:get-joystick-axes %glfw:get-joystick-buttons %glfw:get-joystick-hats
+               %glfw:get-joystick-name %glfw:get-joystick-guid %glfw:joystick-is-gamepad-p %glfw:update-gamepad-mappings
+               %glfw:get-gamepad-name %glfw:get-gamepad-state %glfw:get-timer-value %glfw:get-timer-frequency)
+
+(deftype joystick-id () '(integer 0 15))
 
 ;;;; ## Clipboard
 

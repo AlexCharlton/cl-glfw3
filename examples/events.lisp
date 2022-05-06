@@ -35,6 +35,37 @@
   (setf *window-size* (list w h))
   (update-window-title window))
 
+(def-window-iconify-callback iconify-callback (window minp)
+  (declare (ignore window))
+  (format t "~a~%" (if minp
+                       'min
+                       'not-min)))
+
+(def-window-maximize-callback maximize-callback (window maxp)
+  (declare (ignore window))
+  (format t "~a~%" (if maxp
+                       'max
+                       'not-max)))
+
+#|
+(def-drop-callback drop-print-callback+ (window num pathes)
+  (declare (ignore window))
+  (format t "drop~%num:~a, pathes: ~a~%" num pathes)
+  (let ((p-list (loop for i from 0 below num collect
+		      (pathname (cffi:mem-aref pathes :string i)))))
+    (print p-list)))
+|#
+
+(def-drop-callback drop-print-callback (window num pathes)
+  (declare (ignore window))
+  (print num)
+  (print pathes))
+#|
+  (dotimes (i num)
+    (print i)
+    (print (cffi:mem-aref pathes :string i))))
+|#
+
 (defun events-example ()
   ;; Graphics calls on OS X must occur in the main thread
   (with-body-in-main-thread ()
@@ -42,6 +73,9 @@
       (set-key-callback 'key-callback)
       (set-mouse-button-callback 'mouse-callback)
       (set-window-size-callback 'window-size-callback)
+      (set-window-iconify-callback 'iconify-callback)
+      (set-window-maximize-callback 'maximize-callback)
+      (set-drop-callback 'drop-print-callback)
       (setf *window-size* (get-window-size))
       (update-window-title *window*)
       (loop until (window-should-close-p) do (wait-events)))))
