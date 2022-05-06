@@ -241,10 +241,8 @@ then call callback-function as lambda function."
 		    ,@actual-body))
 		,(first (first args)) ;;window
 		,(first (second args)) ;;counter
-		(loop :for i :from 0 :below ,(first (second args)) :collect           ;;pathes
-		      (pathname (cffi:mem-aref ,(first (third args)) :string i)))))))
-
-
+                (mapcar #'pathname
+                        (c-array->list ,(first (third args)) ,(first (second args)) :string))))))
 
 (defun c-array->list (array count &optional (type :pointer))
   (loop for i below count collect (mem-aref array type i)))
@@ -263,7 +261,6 @@ then call callback-function as lambda function."
   :repeat)
 
 ;;; # Gamepad axes
-;;added
 (defcenum (gamepad-axes)
   (:left-x 0)
   (:left-y 1)
@@ -273,7 +270,6 @@ then call callback-function as lambda function."
   (:right-trigger 5)
   (:last 5))
 
-;;added
 ;;; # Gamepad buttons
 (defcenum (gamepad-buttons)
   (:a 0)
@@ -297,7 +293,6 @@ then call callback-function as lambda function."
   (:square 2)
   (:triangle 3))
 
-;;added
 ;;; # joystick hat states
 (defbitfield (hat)
   (:centered #x0000)
@@ -454,7 +449,6 @@ then call callback-function as lambda function."
   (:right-super 347)
   (:menu 348))
 
-;;added caps-lock#x10 num-lock#x20
 ;;; # Modifier key flags
 (defbitfield (mod-keys)
   :shift
@@ -478,7 +472,6 @@ then call callback-function as lambda function."
   (:left 0)
   (:right 1))
 
-;;added
 ;;Standard cursor shapes
 (defcenum (cursor-shape)
   (:arrow #x00036001)
@@ -507,13 +500,13 @@ then call callback-function as lambda function."
   (:resizable #X00020003)
   (:visible #X00020004)
   (:decorated #X00020005)
-  (:auto-iconify #x00020006) ;added
-  (:floating #x00020007) ;added
-  (:maximized #x00020008) ;added
-  (:center-cursor #x00020009) ;added
-  (:transparent-framebuffer #x0002000a) ;added
-  (:hovered #x0002000b) ;added
-  (:focus-on-show #x0002000c) ;added
+  (:auto-iconify #x00020006)
+  (:floating #x00020007)
+  (:maximized #x00020008)
+  (:center-cursor #x00020009)
+  (:transparent-framebuffer #x0002000a)
+  (:hovered #x0002000b)
+  (:focus-on-show #x0002000c)
   (:red-bits #X00021001)
   (:green-bits #X00021002)
   (:blue-bits #X00021003)
@@ -529,7 +522,7 @@ then call callback-function as lambda function."
   (:samples #X0002100d)
   (:srgb-capable #X0002100E)
   (:refresh-rate #X0002100F)
-  (:doublebuffer #x00021010) ;added
+  (:doublebuffer #x00021010)
   (:client-api #X00022001)
   (:context-version-major #x00022002)
   (:context-version-minor #x00022003)
@@ -538,15 +531,15 @@ then call callback-function as lambda function."
   (:opengl-forward-compat #x00022006)
   (:opengl-debug-context #x00022007)
   (:opengl-profile #X00022008)
-  (:context-release-behavior #x00022009) ;added
-  (:context-no-error #x0002200a) ;added
-  (:context-creation-api #x0002200b) ;added
-  (:scale-to-monitor #x0002200c) ;added
-  (:cocoa-retina-framebuffer #x00023001) ;added
-  (:cocoa-frame-name #x00023002) ;added
-  (:cocoa-graphics-switching #x00023003) ;added
-  (:x11-class-name #x00024001) ;added
-  (:x11-instance-name #x00024002) ;added
+  (:context-release-behavior #x00022009)
+  (:context-no-error #x0002200a)
+  (:context-creation-api #x0002200b)
+  (:scale-to-monitor #x0002200c)
+  (:cocoa-retina-framebuffer #x00023001)
+  (:cocoa-frame-name #x00023002)
+  (:cocoa-graphics-switching #x00023003)
+  (:x11-class-name #x00024001)
+  (:x11-instance-name #x00024002)
   )
 
 ;;window attributes for set-window-attributes
@@ -597,7 +590,6 @@ then call callback-function as lambda function."
   (:cursor #X00033001)
   (:sticky-keys #X00033002)
   (:sticky-mouse-buttons #x00033003)
-  ;;added
   (:lock-key-mods #x00033004)
   (:raw-mouse-motion #x00033005))
 
@@ -628,20 +620,18 @@ then call callback-function as lambda function."
   (blue :pointer)
   (size :unsigned-int))
 
-;;added
 (defcstruct image
   (width :int)
   (height :int)
   (pixels (:pointer :uchar)))
 
-;;added
 (defcstruct gamepad-state
   (buttons (:pointer :char))
   (axes (:pointer :float)))
 
 (defctype window :pointer)
 (defctype monitor :pointer)
-;;added
+
 (defctype cursor :pointer)
 
 ;; vulkan handles
@@ -717,10 +707,9 @@ Returns the previous error callback."
 (defcfun ("glfwGetMonitorName" get-monitor-name) :string
   (monitor monitor))
 
-;;added
 (defcfun ("glfwSetMonitorUserPointer" set-monitor-user-pointer) :void
   (monitor monitor) (pointer :pointer))
-;;added
+
 (defcfun ("glfwGetMonitorUserPointer" get-monitor-user-pointer) :pointer
   (monitor monitor))
 
@@ -781,7 +770,7 @@ Returns previously set callback."
 (defcfun ("glfwSetWindowTitle" set-window-title) :void
   (window window) (title :string))
 
-;;added
+
 (defcfun ("glfwSetWindowIcon" set-window-icon) :void
   (window window) (image-count :int) (images (:pointer (:struct image))))
 
@@ -811,7 +800,7 @@ Returns previously set callback."
 (defcfun ("glfwSetWindowAspectRatio" set-window-aspect-ratio) :void
   (window window) (width :int) (height :int))
 
-;;added
+
 (defun get-window-frame-size (window)
   "returns size (left top right bottom) of frame size."
   (with-foreign-objects ((left :int) (top :int) (right :int) (bottom :int))
@@ -843,7 +832,6 @@ Returns previously set callback."
 (defcfun ("glfwRestoreWindow" restore-window) :void
   (window window))
 
-;;added
 (defcfun ("glfwMaximizeWindow" maximize-window) :void
   (window window))
 
@@ -853,11 +841,10 @@ Returns previously set callback."
 (defcfun ("glfwHideWindow" hide-window) :void
   (window window))
 
-;;added
+
 (defcfun ("glfwFocusWindow" focus-window) :void
   (window window))
 
-;;added
 (defcfun ("glfwRequestWindowAttention" request-window-attention) :void
   (window window))
 
@@ -918,7 +905,6 @@ Returns previously set callback."
 Returns previously set callback."
   (window window) (iconify-fun :pointer))
 
-;;added
 (defcfun ("glfwSetWindowMaximizeCallback" set-window-maximize-callback) :pointer
   "MAXIMIZE-FUN is a callback of type 'void (* GLFWwindowmaximizefun)(GLFWwindow*,int)'.
   Returns previously set callback."
@@ -929,7 +915,6 @@ Returns previously set callback."
 Returns previously set callback."
   (window window) (framebuffer-size-fun :pointer))
 
-;;added
 (defcfun ("glfwSetWindowContentScaleCallback" set-window-content-scale-callback) :pointer
   "CONTENTS-SCALE-FUN is a callback of type 'void (* GLFWwindowContentsScalefun)(GLFWwindow*,float,float)'.
   Returns previously set callback."
@@ -940,7 +925,7 @@ Returns previously set callback."
 
 (defcfun ("glfwWaitEvents" wait-events) (float-traps-masked :void))
 
-;;added trapps-masked?
+;; trapps-masked?
 (defcfun ("glfwWaitEventsTimeout" wait-events-timeout) :void
   (timeout :double))
 
@@ -958,13 +943,11 @@ Returns previously set callback."
   else value is true or false"
   (window window) (mode input-mode) (value :int))
 
-;;added
 (defcfun ("glfwRawMouseMotionSupported" raw-mouse-motion-supported-p) :int)
 
-;;added
 (defcfun ("glfwGetKeyName" get-key-name) :string
   (key key) (scancode :int))
-;;added
+
 (defcfun ("glfwGetKeyScancode" get-key-scancode) :int
   (key key))
 
@@ -984,19 +967,15 @@ Returns previously set callback."
 (defcfun ("glfwSetCursorPos" set-cursor-position) :void
   (window window) (x :double) (y :double))
 
-;;added
 (defcfun ("glfwCreateCursor" create-cursor) cursor
   (image (:pointer (:struct image))) (xhot :int) (yhot :int))
 
-;;added
 (defcfun ("glfwCreateStandardCursor" create-standard-cursor) cursor
   (shape cursor-shape))
 
-;;added
 (defcfun ("glfwDestroyCursor" destroy-cursor) :void
   (cursor cursor))
 
-;;added
 (defcfun ("glfwSetCursor" set-cursor) :void
   (window window) (cursor cursor))
 
@@ -1010,7 +989,6 @@ Returns previously set callback."
 Returns previously set callback."
   (window window) (char-fun :pointer))
 
-;;added
 (defcfun ("glfwSetCharModsCallback" set-char-mods-callback) :pointer
   "CHAR-MODS-FUN is a callback of type 'void (* GLFWCharModsfun)(GLFWwindow*,pointer)'.
 Returns previously set callback."
@@ -1037,7 +1015,6 @@ Returns previously set callback."
   (window window) (SCROLL-FUN :pointer))
 
 ;;;; ### files
-;;added
 (defcfun ("glfwSetDropCallback" set-drop-callback) :pointer
   "DROP-FUN is a callback of type 'void (* GLFWdropfun)(GLFWwindow*,int path_count,struct char** path_names)'.
 Returns previously set callback."
@@ -1065,7 +1042,6 @@ Returns previously set callback."
         (mem-ref count :int)
         'key-action)))
 
-;;added
 (defun get-joystick-hats (joystick)
   "Returns list of values for direction of the joystick."
   (with-foreign-object (count :int)
@@ -1078,37 +1054,29 @@ Returns previously set callback."
 (defcfun ("glfwGetJoystickName" get-joystick-name) :string
   (joystick :int));jid
 
-;;added
 (defcfun ("glfwGetJoystickGUID" get-joystick-guid) :string
   (joystick :int))
 
-;;added
 (defcfun ("glfwSetJoystickUserPointer" set-joystick-user-pointer) :void
   (joystick :int) (pointer :pointer))
 
-;;added
 (defcfun ("glfwGetJoystickUserPointer" get-joystick-user-pointer) :pointer
   (joystick :int))
 
-;;added
 (defcfun ("glfwJoystickIsGamepad" joystick-is-gamepad-p) :boolean
   (joystick :int))
 
-;;added
 (defcfun ("glfwSetJoystickCallback" set-joystick-callback) :pointer
   "JOYSTICK-FUN is a callback of type 'void (* GLFWjoystickfun)(int joystick,int event)'.
 Returns previously set callback."
   (JOYSTICK-FUN :pointer))
 
-;;added
 (defcfun ("glfwUpdateGamepadMappings" update-gamepad-mappings) :boolean
   (string :string))
 
-;;added
 (defcfun ("glfwGetGamepadName" get-gamepad-name) :string
   (joystick :int))
 
-;;added
 (defcfun ("glfwGetGamepadState" get-gamepad-state) :boolean
   (joystick :int) (gamepad-state (:pointer (:struct gamepad-state))))
 
@@ -1125,10 +1093,8 @@ Returns previously set callback."
 (defcfun ("glfwSetTime" set-time) :void
   (time :double))
 
-;;added
 (defcfun ("glfwGetTimerValue" get-timer-value) :uint64)
 
-;;added
 (defcfun ("glfwGetTimerFrequency" get-timer-frequency) :uint64)
 
 ;;;; ### Context

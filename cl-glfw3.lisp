@@ -735,7 +735,6 @@ SHARED: The window whose context to share resources with."
        ((,window :pointer) (,x :double) (,y :double))
      ,@body))
 
-;;added
 ;;must: support function
 (defmacro def-drop-callback (name (window number-of-pathes pathes) &body body)
   `(%glfw::define-glfw-drop-callback ,name
@@ -777,7 +776,6 @@ SHARED: The window whose context to share resources with."
                %glfw:get-joystick-name %glfw:get-joystick-guid %glfw:joystick-is-gamepad-p %glfw:update-gamepad-mappings
                %glfw:get-gamepad-name %glfw:get-gamepad-state %glfw:get-timer-value %glfw:get-timer-frequency)
 
-;;added
 (deftype joystick-id () '(integer 0 15))
 
 ;;;; ## Clipboard
